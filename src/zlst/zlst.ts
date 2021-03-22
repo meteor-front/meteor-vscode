@@ -210,6 +210,9 @@ export default class Zlst {
     let url = await vscode.window.showQuickPick([addText].concat(swaggerUrl), {
       placeHolder: 'swagger url'
     });
+    if (!url) {
+      return;
+    }
     // 新增操作
     if (url === addText) {
       url = await vscode.window.showInputBox({

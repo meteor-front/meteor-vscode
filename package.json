@@ -122,6 +122,11 @@
 				"key": "shift+alt+o",
 				"command": "zlst.outlineTest",
 				"when": "editorTextFocus"
+			},
+			{
+				"key": "alt+p",
+				"command": "zlst.componentNew",
+				"when": "editorTextFocus"
 			}
 		],
 		"snippets": [
