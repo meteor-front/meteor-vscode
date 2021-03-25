@@ -18,9 +18,9 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/vuejs/vetur.git"
+    "url": "https://github.com/meteor-front/meteor-vscode"
   },
-  "homepage": "https://github.com/vuejs/vetur/tree/master/server",
+  "homepage": "https://github.com/meteor-front/meteor-vscode/tree/master/server",
   "dependencies": {
     "eslint": "^7.21.0",
     "eslint-plugin-vue": "^7.7.0",

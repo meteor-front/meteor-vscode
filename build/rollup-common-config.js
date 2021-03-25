@@ -40,7 +40,6 @@ const external = [
   'stream',
   'string_decoder',
   'perf_hooks',
-  // vscode
   'vscode'
 ];
 

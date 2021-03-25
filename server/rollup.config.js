@@ -17,7 +17,7 @@ function copySnippets() {
   return {
     name: 'copy-snippets',
     buildEnd() {
-      fs.copySync(getVLSPath('src/modes/vue/veturSnippets'), getVLSPath('dist/veturSnippets'), {
+      fs.copySync(getVLSPath('src/modes/vue/MeteorSnippets'), getVLSPath('dist/MeteorSnippets'), {
         overwrite: true,
         recursive: true
       });
@@ -40,10 +40,10 @@ function copyTSDefaultLibs() {
 }
 
 module.exports = [
-  // vueServerMain
+  // meteorServerMain
   {
-    input: getVLSPath('src/vueServerMain.ts'),
-    output: { file: getVLSPath('dist/vueServerMain.js'), name: vlsPkg.name, format: 'cjs', sourcemap: true },
+    input: getVLSPath('src/meteorServerMain.ts'),
+    output: { file: getVLSPath('dist/meteorServerMain.js'), name: vlsPkg.name, format: 'cjs', sourcemap: true },
     external,
     onwarn,
     watch: {

@@ -25,13 +25,7 @@
     "test:monorepo": "node ./dist-test/test/codeTestRunner.js monorepo",
     "test": "run-s test:server test:e2e",
     "docs": "bash ./build/update-docs.sh",
-    "prepare-publish": "./build/release-cleanup.sh",
-    "prepare": "husky install"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged"
-    }
+    "prepare-publish": "./build/release-cleanup.sh"
   },
   "lint-staged": {
     "*.ts": [
@@ -43,10 +37,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/vuejs/vetur.git"
+    "url": "https://github.com/meteor-front/meteor-vscode"
   },
   "keywords": [
-    "vetur",
+    "Meteor",
     "Vue",
     "vue",
     "vuejs"
@@ -61,7 +55,7 @@
     "onLanguage:vue",
     "onLanguage:plaintext"
   ],
-  "main": "./dist/vueMain.js",
+  "main": "./dist/meteorMain.js",
   "contributes": {
 		"configuration": {
 			"type": "object",
@@ -103,7 +97,6 @@
     "esbuild": "^0.8.55",
     "fs-extra": "^9.1.0",
     "glob": "^7.1.6",
-    "husky": "^5.1.3",
     "js-yaml": "^4.0.0",
     "lint-staged": "^10.5.4",
     "minimist": "^1.2.5",
