@@ -4,7 +4,8 @@
  * ------------------------------------------------------------------------------------------ */
 
 import * as path from 'path';
-import { workspace, ExtensionContext } from 'vscode';
+import * as vscode from 'vscode';
+import Meteor from './meteor/meteor'
 
 import {
 	LanguageClient,
@@ -15,8 +16,16 @@ import {
 
 let client: LanguageClient;
 
-export function activate(context: ExtensionContext) {
-	// The server is implemented in node
+export function activate(context: vscode.ExtensionContext) {
+  const meteor = new Meteor(context)
+
+  // 为标签、属性提示提供自动完成功能, 关闭标签功能
+  let completionDisposible = vscode.languages.registerCompletionItemProvider(['vue', 'javascript', 'html'], meteor.completionItemProvider, '' ,':', '<', '"', "'", '/', '@', '(', '>', '{');
+
+  
+  context.subscriptions.push(completionDisposible)
+
+	// 服务器用node实现
 	let serverModule = context.asAbsolutePath(
 		path.join('server', 'dist', 'meteorServerMain.js')
 	);
@@ -37,23 +46,21 @@ export function activate(context: ExtensionContext) {
 
 	// Options to control the language client
 	let clientOptions: LanguageClientOptions = {
-		// Register the server for plain text documents
 		documentSelector: [{ scheme: 'file', language: 'plaintext' }],
 		synchronize: {
-			// Notify the server about file changes to '.clientrc files contained in the workspace
-			fileEvents: workspace.createFileSystemWatcher('**/.clientrc')
+			fileEvents: vscode.workspace.createFileSystemWatcher('**/.clientrc')
 		}
 	};
 
-	// Create the language client and start the client.
+	// 创建语言客户端并开启
 	client = new LanguageClient(
-		'languageServerExample',
-		'Language Server Example',
+		'meteorServer',
+		'meteorServerExample',
 		serverOptions,
 		clientOptions
 	);
 
-	// Start the client. This will also launch the server
+	// 开启客户端，并会启动服务端
 	client.start();
 }
 

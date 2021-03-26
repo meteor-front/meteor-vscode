@@ -52,35 +52,33 @@
     "vscode": "^1.52.0"
   },
   "activationEvents": [
-    "onLanguage:vue",
-    "onLanguage:plaintext"
+    "onLanguage:vue"
   ],
   "main": "./dist/meteorMain.js",
-  "contributes": {
-		"configuration": {
-			"type": "object",
-			"title": "Example configuration",
-			"properties": {
-				"languageServerExample.maxNumberOfProblems": {
-					"scope": "resource",
-					"type": "number",
-					"default": 100,
-					"description": "Controls the maximum number of problems produced by the server."
-				},
-				"languageServerExample.trace.server": {
-					"scope": "window",
-					"type": "string",
-					"enum": [
-						"off",
-						"messages",
-						"verbose"
-					],
-					"default": "off",
-					"description": "Traces the communication between VS Code and the language server."
-				}
-			}
-		}
-	},
+  "contributes": {},
+  "configuration": {
+    "title": "meteor",
+    "properties": {
+      "meteor.componentNamingRule": {
+        "description": "dictate the rule of vue component name in html section",
+        "type": "string",
+        "default": "kebabCase",
+        "enum": [
+          "kebabCase",
+          "camelCase",
+          "CamelCase"
+        ]
+      },
+      "meteor.componentPrefix": {
+        "type": "object",
+        "description": "assign prefix to replace in the file path",
+        "default": {
+          "alias": "@",
+          "path": "src"
+        }
+      }
+    }
+  },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^17.1.0",
     "@rollup/plugin-json": "^4.1.0",
@@ -94,6 +92,7 @@
     "@types/node": "^14.14.31",
     "@types/shelljs": "^0.8.8",
     "@types/vscode": "^1.52.0",
+    "axios": "^0.21.1",
     "esbuild": "^0.8.55",
     "fs-extra": "^9.1.0",
     "glob": "^7.1.6",
@@ -114,6 +113,9 @@
     "typescript": "^4.2.2",
     "vscode-languageclient": "^7.0.0",
     "vscode-languageserver-types": "^3.16.0",
-    "vscode-test": "^1.5.1"
+    "vscode-test": "^1.5.1",
+    "pretty": "^2.0.0"
+  },
+  "dependencies": {
   }
 }
