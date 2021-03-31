@@ -2,10 +2,10 @@
   "name": "ast",
   "displayName": "ast",
   "description": "test",
-  "author": "sjl",
+  "author": "shenjiaolong",
   "icon": "asset/vue.png",
   "version": "1.0.0",
-  "publisher": "sjl",
+  "publisher": "shenjiaolong",
   "scripts": {
     "postinstall": "run-s install:*",
     "install:server": "cd server && yarn",
@@ -52,29 +52,39 @@
     "vscode": "^1.52.0"
   },
   "activationEvents": [
-    "onLanguage:vue"
+    "onLanguage:vue",
+    "onCommand:meteor.functionCompletion"
   ],
   "main": "./dist/meteorMain.js",
-  "contributes": {},
-  "configuration": {
-    "title": "meteor",
-    "properties": {
-      "meteor.componentNamingRule": {
-        "description": "dictate the rule of vue component name in html section",
-        "type": "string",
-        "default": "kebabCase",
-        "enum": [
-          "kebabCase",
-          "camelCase",
-          "CamelCase"
-        ]
-      },
-      "meteor.componentPrefix": {
-        "type": "object",
-        "description": "assign prefix to replace in the file path",
-        "default": {
-          "alias": "@",
-          "path": "src"
+  "contributes": {
+    "keybindings": [
+      {
+				"command": "meteor.functionCompletion",
+				"key": "shift+alt+enter",
+				"when": "editorTextFocus"
+			}
+    ],
+    "configuration": {
+      "title": "meteor",
+      "type": "object",
+      "properties": {
+        "meteor.componentNamingRule": {
+          "description": "dictate the rule of vue component name in html section",
+          "type": "string",
+          "default": "kebabCase",
+          "enum": [
+            "kebabCase",
+            "camelCase",
+            "CamelCase"
+          ]
+        },
+        "meteor.pathAlias": {
+          "type": "object",
+          "description": "assign prefix to replace in the file path",
+          "default": {
+            "alias": "@",
+            "path": "src"
+          }
         }
       }
     }

@@ -1,11 +1,12 @@
 import { window, CancellationToken, workspace, CompletionItemProvider, ProviderResult,
   TextDocument, Position, CompletionItem, CompletionList, CompletionItemKind,
-  SnippetString, Range, Selection, WorkspaceConfiguration } from 'vscode';
+  SnippetString, Range, Selection, WorkspaceConfiguration, commands, Uri, TextEditor } from 'vscode';
 import * as fs from 'fs';
 import * as path from 'path';
 import { TAGS } from './tags/index';
 import { ATTRS } from './attributes/index';
 const pretty = require('pretty');
+import util from '../meteor/utils/util';
 
 export interface TagObject {
   text: string,
@@ -18,12 +19,260 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
   private tagReg: RegExp = /<([\w-]+)\s+/g;
   private attrReg: RegExp = /(?:\(|\s*)((\w(-)?)*)=['"][^'"]*/;  // 能够匹配 left-right 属性
   private tagStartReg: RegExp = /<([\w-]*)$/;
-  private size!: number;
-  private quotes!: string;
   private config: WorkspaceConfiguration
+  private workspaceRoot: string = ''
+  private CompletionItemKey = [
+    'Text   ',
+    'Method',
+    'Function',
+    'Constructor',
+    'Field',
+    'Variable',
+    'Class',
+    'Interface',
+    'Module',
+    'Property',
+    'Unit',
+    'Value',
+    'Enum',
+    'Keyword',
+    'Snippet',
+    'Color',
+    'Reference',
+    'File',
+    'Folder',
+    'EnumMember',
+    'Constant',
+    'Struct',
+    'Event',
+    'Operator',
+    'TypeParameter',
+    'User',
+    'Issue',
+  ]
+  private symbolKey = [
+    'File',
+    'Module',
+    'Namespace',
+    'Package',
+    'Class',
+    'Method',
+    'Property',
+    'Field',
+    'Constructor',
+    'Enum',
+    'Interface',
+    'Function',
+    'Variable',
+    'Constant',
+    'String',
+    'Number',
+    'Boolean',
+    'Array',
+    'Object',
+    'Key',
+    'Null',
+    'EnumMember',
+    'Struct',
+    'Event',
+    'Operator',
+    'TypeParameter'
+  ]
+  private vueFiles: any = []
+  private tabSpace: string = ''
 
   public constructor(config: WorkspaceConfiguration) {
     this.config = config
+  }
+
+  // 自动补全
+  autoComplement() {
+    let editor: any = window.activeTextEditor;
+    if (!editor) { return; }
+    this.workspaceRoot = util.getWorkspaceRoot(editor.document.uri.path)
+    let txt = editor.document.lineAt(editor.selection.anchor.line).text;
+    if(editor.document.lineCount <= editor.selection.anchor.line + 1) { return; }
+    // 组件自动导入
+    if (/<.*>\s?<\/.*>/gi.test(txt.trim()) || /<.*\/>/gi.test(txt.trim())) {
+      this.autoImportComponent(txt, editor, editor.selection.anchor.line);
+      return;
+    }
+    // 本地文件自动导入
+    let line = editor.selection.anchor.line;
+    let isLocalImport = line === 0;
+    let prevExplore = line > 3 ? 3 : line;
+    for (let i = 0; i < prevExplore; i++) {
+      if (/.*(<script|import|require).*/.test(editor.document.lineAt(line - i).text)) {
+        isLocalImport = true;
+        break;
+      }
+    }
+    if (isLocalImport) {
+      let search = editor.document.lineAt(line).text.trim();
+      if (search) {
+        let vueFiles = this.traverse('', search);
+        let suggestions = [];
+        vueFiles.forEach(vf => {
+          suggestions.push({
+            label: vf.name,
+            sortText: `1000${vf.name}`,
+            insertText: new SnippetString(`${vf.name}$0></${vf.name}>`),
+            kind: CompletionItemKind.Module,
+            detail: 'import internal file',
+            documentation: 'import internal file: ' + vf.path
+          });
+        });
+      }
+      return;
+    }
+
+    let nextLineTxt = editor.document.lineAt(editor.selection.anchor.line + 1).text;
+    
+    let baseEmpty = txt.replace(/(\s)\S.*/gi, '$1');
+    let replaceTxt = ` {\n${baseEmpty}${this.tabSpace}\n${baseEmpty}}`;
+    // 本行全是空
+    if(/^\s*$/gi.test(txt) || txt === '') {
+      replaceTxt = 'name (params)' + replaceTxt;
+    } else if (/[0-9a-zA-Z]\s{0,1}:\s{0,1}[\w\"\']/gi.test(txt)) {
+      // key: value
+      replaceTxt = ',\n' + baseEmpty;
+    } else if(txt.indexOf(')') === -1) {
+      replaceTxt = ' (params)' + replaceTxt;
+    }
+    // 判断下一行是否是单行注释
+    if(/\s*\/\/\s+.*/gi.test(nextLineTxt)) {
+      if(editor.document.lineCount <= editor.selection.anchor.line + 2) { return; }
+      nextLineTxt = editor.document.lineAt(editor.selection.anchor.line + 2).text;
+    }
+    // 下一行是一个函数
+    if (/.*(.*).*{.*/gi.test(nextLineTxt)) {
+      let isCond = false;
+      let txtTrim = txt.trim();
+      const condList = ['if', 'for', 'while', 'switch'];
+      condList.forEach(cond => {
+        if (txtTrim.indexOf(cond) === 0) {
+          isCond = true;
+        }
+      });
+      if (!isCond) {
+        replaceTxt += ',';
+      }
+    }
+    editor.edit((editBuilder: any) => {
+      editBuilder.insert(new Position(editor.selection.anchor.line, txt.length + 1), replaceTxt);
+    });
+    let newPosition = editor.selection.active.translate(1, (baseEmpty + this.tabSpace).length);
+    editor.selection = new Selection(newPosition, newPosition);
+  }
+
+  // 组件自动导入
+  autoImportComponent(txt: string, editor: TextEditor, line: number) {
+    let tag = txt.trim().replace(/<([\w-]*)[\s>].*/gi, '$1');
+    // 没有vue遍历
+    if (this.vueFiles.length === 0) {
+      this.vueFiles = this.traverse('.vue', '');
+    }
+    for (let i = 0; i < this.vueFiles.length; i++) {
+      const vf : any = this.vueFiles[i];
+      if (tag === vf.name) {
+        let countLine = editor.document.lineCount;
+        // 找script位置
+        while (!/^\s*<script.*>\s*$/.test(<string>editor.document.lineAt(line).text)) {
+          if (countLine > line) {
+            line++;
+          } else {
+            break;
+          }
+        }
+        line += 2;
+        if (countLine < line) {
+          return;
+        }
+        // 找import位置
+        while (/import /gi.test(editor.document.lineAt(line).text.trim())) {
+          if (countLine > line) {
+            line++;
+          } else {
+            break;
+          }
+        }
+        let name = vf.name.replace(/(-[a-z])/g, (_: any, c: string) => {
+          return c ? c.toUpperCase() : '';
+        }).replace(/-/gi, '');
+        let importString = `import ${name} from '${util.getRelativePath(editor.document.uri.path, path.join(this.workspaceRoot, vf.path))}'\n`;
+        let importLine = line;
+        
+        if (line < countLine) {
+          let prorityInsertLine = 0;
+          let secondInsertLine = 0;
+          let hasComponents = false;
+          let baseEmpty = '';
+          while(!/\s*<\/script>\s*/gi.test(editor.document.lineAt(line).text.trim())) {
+            if (/\s*components\s*:\s*{.*}.*/gi.test(editor.document.lineAt(line).text.trim())) {
+              let text = editor.document.lineAt(line).text;
+              let preText = text.replace(/\s*}.*$/, '');
+              let insertPos = preText.length;
+              editor.edit((editBuilder) => {
+                importString = importString.replace(/\\/gi, '/');
+                editBuilder.insert(new Position(importLine, 0), importString);
+                editBuilder.insert(new Position(line, insertPos), ', ' + name);
+              });
+              break;
+            }
+            if (hasComponents && /\s*},?\s*$/gi.test(editor.document.lineAt(line).text.trim())) {
+              let text = editor.document.lineAt(line - 1).text;
+              let insertPos = text.indexOf(text.trim());
+              let empty = '';
+              for (let i = 0; i < insertPos; i++) {
+                empty += ' ';         
+              }
+              editor.edit((editBuilder) => {
+                importString = importString.replace(/\\/gi, '/');
+                editBuilder.insert(new Position(importLine, 0), importString);
+                editBuilder.insert(new Position(line - 1, editor.document.lineAt(line - 1).text.length), ',\n' + empty + name);
+              });
+              break;
+            }
+            if (/\s*components\s*:\s*{\s*$/gi.test(editor.document.lineAt(line).text.trim())) {
+              hasComponents = true;
+            }
+            if (/\s*export\s*default\s*{\s*/gi.test(editor.document.lineAt(line).text.trim())) {
+              secondInsertLine = line;
+            }
+            if (/\s*data\s*\(\s*\)\s*{\s*/gi.test(editor.document.lineAt(line).text.trim())) {
+              let text = editor.document.lineAt(line).text;
+              let insertPos = text.indexOf(text.trim());
+              for (let i = 0; i < insertPos; i++) {
+                baseEmpty += ' ';         
+              }
+              prorityInsertLine = line;
+            }
+            if (countLine > line) {
+              line++;
+            } else {
+              break;
+            }
+          }
+          if (prorityInsertLine > 0) {
+            editor.edit((editBuilder) => {
+              importString = importString.replace(/\\/gi, '/');
+              editBuilder.insert(new Position(importLine - 1, 0), importString);
+              editBuilder.insert(new Position(prorityInsertLine - 1, editor.document.lineAt(prorityInsertLine - 1).text.length), `\n\t${baseEmpty}components: { ${name} },`);
+            });
+            break;
+          }
+          if (secondInsertLine > 0) {
+            editor.edit((editBuilder) => {
+              importString = importString.replace(/\\/gi, '/');
+              editBuilder.insert(new Position(importLine, 0), importString);
+              editBuilder.insert(new Position(secondInsertLine, editor.document.lineAt(secondInsertLine).text.length),  `\n${this.tabSpace}components: { ${name} },`);
+            });
+          }
+        }
+
+        break;
+      }
+    }
   }
 
   // 遍历组件
@@ -46,7 +295,7 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
       };
     }
     let rootPathes = fs.readdirSync(workspace.rootPath || '');
-    let prefix = this.config.componentPrefix;
+    let prefix = this.config.pathAlias;
     
     for (let i = 0; i < rootPathes.length; i++) {
       const rootPath = rootPathes[i];
@@ -93,17 +342,21 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
       } 
       dir = dir.replace(posterReg, '$1');
       if (!search || (search && dir.includes(search))) {
-        if (prefix.path === './' || prefix.path === '') {
-          vueFiles.push({
-            name: name,
-            path: prefix.alias + '/' + dir
-          });
-        } else {
-          vueFiles.push({
-            name: name,
-            path: dir.replace(new RegExp('^' + prefix.path), prefix.alias)
-          });
-        }
+        vueFiles.push({
+          name: name,
+          path: dir + poster
+        });
+        // if (prefix.path === './' || prefix.path === '') {
+        //   vueFiles.push({
+        //     name: name,
+        //     path: prefix.alias + '/' + dir
+        //   });
+        // } else {
+        //   vueFiles.push({
+        //     name: name,
+        //     path: dir.replace(new RegExp('^' + prefix.path), prefix.alias)
+        //   });
+        // }
       }
     }
   }
@@ -190,15 +443,17 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
     let id = 100;
     // 添加vue组件提示
     let vueFiles = this.traverse('.vue', '');
+    this.vueFiles = vueFiles;
     for (let i = 0; i < vueFiles.length; i++) {
       const vf = vueFiles[i];
       suggestions.push({
-        label: vf.name,
-        sortText: `1000${i}${vf.name}`,
+        label: vf.name + '[component]',
+        sortText: `000${i}${vf.name}`,
         insertText: new SnippetString(`${vf.name}$0></${vf.name}>`),
-        kind: CompletionItemKind.Module,
-        detail: 'vue component',
-        documentation: 'internal component: ' + vf.path
+        kind: CompletionItemKind.File,
+        detail: '[meteor]vue component',
+        documentation: 'internal component: ' + vf.path,
+        command: { command: 'meteor.functionCompletion', title: 'completions' }
       });
     }
 
@@ -264,7 +519,7 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
       // 属性
       let attrs = '';
       defaults && defaults.forEach((item: any, i: any) => {
-        attrs += ` ${item}=${that.quotes}$${index + i + 1}${that.quotes}`;
+        attrs += ` ${item}='$${index + i + 1}'`;
       });
       // 开始标签
       snippets.push(`${index > 0 ? '<' : ''}${tag}${attrs}>`);
@@ -284,7 +539,7 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
     return {
       label: tag,
       sortText: `0${id}${tag}`,
-      insertText: new SnippetString(pretty('<' + snippets.join(''), { indent_size: this.size }).substr(1)),
+      insertText: new SnippetString(pretty('<' + snippets.join(''), { indent_size: that.tabSpace.length }).substr(1)),
       kind: CompletionItemKind.Snippet,
       detail: `vue component`,
       documentation: tagVal.description
@@ -303,7 +558,7 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
       }
       return {
         label: attr,
-        insertText: (type && (type === 'flag')) ? `${attr} ` : new SnippetString(`${attr}=${this.quotes}$1${this.quotes}$0`),
+        insertText: (type && (type === 'flag')) ? `${attr} ` : new SnippetString(`${attr}='$1'$0`),
         kind: (type && (type === 'method')) ? CompletionItemKind.Method : CompletionItemKind.Property,
         detail,
         documentation: description
@@ -471,7 +726,7 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
     if (pathRegArr && pathRegArr.length > 0) {
       let tagPath = pathRegArr[0];
       tagPath = tagPath.replace(/(.*['"])/, '');
-      tagPath = tagPath.replace(this.config.componentPrefix.alias, this.config.componentPrefix.path);
+      tagPath = tagPath.replace(this.config.pathAlias.alias, this.config.pathAlias.path);
       if (!tagPath.endsWith('.vue')) {
         tagPath += '.vue';
       }
@@ -556,39 +811,50 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
     return /^\s*import\s*{\s*[\w,\s]*\s*}\s*.*/.test(this._document.lineAt(this._position.line).text);
   }
 
-  importStateSuggestion() {
+  async importStateSuggestion() {
     let filePath = this._document.lineAt(this._position.line).text.replace(/.*[\'\"](.*)[\'\"].*/gi, '$1')
-    filePath = filePath.replace(this.config.componentPrefix.alias, this.config.componentPrefix.path);
+    // 导入提示针对JavaScript文件
     if (!filePath.endsWith('.js')) {
       filePath += '.js';
     }
-    try {
-      let dist = fs.readFileSync(path.join(workspace.rootPath || '', filePath), 'utf-8');
-      let lineTexts = dist.split('\n');
-      let props = []
-      for (let i = 0; i < lineTexts.length; i++) {
-        const lienText = lineTexts[i];
-        if (/export.*/gi.test(lienText.trim())) {
-          let stateName = lienText.replace(/\s*export\s*\w*\s*(\w*).*/gi, '$1');
-          props.push({
-            label: stateName,
-            sortText: '0' + (props.length + 1),
-            insertText: new SnippetString(`${stateName}`),
-            kind: CompletionItemKind.Property,
-            documentation: ''
-          });
-        }
-      }
-      return props;
-    } catch (error) {
-      return [];
+    if (filePath.includes(this.config.pathAlias.alias)) {
+      // 别名替换
+      filePath = filePath.replace(this.config.pathAlias.alias, this.config.pathAlias.path);
+      filePath = path.join(this.workspaceRoot, filePath)
+    } else if (filePath.startsWith('./') || filePath.startsWith('../')) {
+      // 相对路径
+      filePath = path.join(this._document.uri.path, filePath)
+    } else {
+      return []
     }
+    const symbolList: any = await commands.executeCommand('vscode.executeDocumentSymbolProvider', Uri.file(filePath))
+    if (symbolList && symbolList.length > 0) {
+      let symbolRet: any[] = []
+      for (let i = 0; i < symbolList.length; i++) {
+        const symbolItem = symbolList[i];
+        let kind = this.CompletionItemKey.indexOf(this.symbolKey[symbolItem.kind])
+        symbolRet.push({
+          label: symbolItem.name,
+          sortText: '0' + symbolRet.length,
+          insertText: new SnippetString(`${symbolItem.name}`),
+          kind: kind === -1 ? 5 : kind,
+          documentation: ''
+        })
+      }
+      return symbolRet
+    }
+    return []
   }
 
   // 提供完成项(提示入口)
   provideCompletionItems(document: TextDocument, position: Position, token: CancellationToken): ProviderResult<CompletionItem[] | CompletionList> {
     this._document = document;
     this._position = position;
+    this.workspaceRoot = util.getWorkspaceRoot(this._document.uri.path)
+    if (this.tabSpace.length === 0) {
+      this.tabSpace = util.setTabSpace()
+    }
+    console.log('trigger completion')
     
     // import导入提示增强
     if (this.isImportState()) {
@@ -604,8 +870,6 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
       this.getCloseTagSuggestion();
       return null;
     }
-    this.size = <number>this.config.get('indent-size');
-    this.quotes = this.config.get('quotes') === 'double' ? '"' : "'";
 
     // 标签、属性
     let tag: TagObject | string | undefined = this.getPreTag();
@@ -620,11 +884,11 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
         return this.getPropAttr(this._document.getText(), tag.text);
       }
     } else if (this.isTagStart()) { // 标签开始
+      console.log()
       switch (document.languageId) {
         case 'vue':
           return this.notInTemplate() ? [] : this.getTagSuggestion();
         case 'html':
-          // todo
           return this.getTagSuggestion();
       }
     } else if (this.isImport()) {
@@ -632,3 +896,4 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
     } else { return []; }
   }
 }
+

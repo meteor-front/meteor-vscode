@@ -18,12 +18,23 @@ let client: LanguageClient;
 
 export function activate(context: vscode.ExtensionContext) {
   const meteor = new Meteor(context)
-
-  // 为标签、属性提示提供自动完成功能, 关闭标签功能
-  let completionDisposible = vscode.languages.registerCompletionItemProvider(['vue', 'javascript', 'html'], meteor.completionItemProvider, '' ,':', '<', '"', "'", '/', '@', '(', '>', '{');
-
   
-  context.subscriptions.push(completionDisposible)
+  // 为标签、属性提示提供自动完成功能, 关闭标签功能
+  let completionDisposible = vscode.languages.registerCompletionItemProvider(['vue', 'javascript', 'html', 'wxml'], meteor.completionItemProvider, '' ,':', '<', '"', "'", '/', '@', '(', '>', '{');
+  // 函数补全函数
+  let functionCompletionDisposable = vscode.commands.registerCommand('meteor.functionCompletion', () => {
+    let editor = vscode.window.activeTextEditor;
+    if (!editor) { return; }
+    let txt = editor.document.lineAt(editor.selection.anchor.line).text;
+    if (/.*@\w*=\"\w.*\"/gi.test(txt)) {
+      // 定义方法，并跳到方法处
+      // zlst.generateMethod();
+    } else {
+      meteor.completionItemProvider.autoComplement()
+    }
+  });
+  
+  context.subscriptions.push(completionDisposible, functionCompletionDisposable)
 
 	// 服务器用node实现
 	let serverModule = context.asAbsolutePath(
