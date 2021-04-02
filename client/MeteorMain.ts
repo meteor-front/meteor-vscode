@@ -6,6 +6,7 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import Meteor from './meteor/meteor'
+import { open, url } from './meteor/utils/util'
 
 import {
 	LanguageClient,
@@ -33,8 +34,24 @@ export function activate(context: vscode.ExtensionContext) {
       meteor.completionItemProvider.autoComplement()
     }
   });
+  // 代码块选择
+  let blockSelectDisposable = vscode.commands.registerCommand('meteor.blockSelect', () => {
+      meteor.block.select()
+  });
+  // 删除处理函数
+  let deleteCompleteDisposable = vscode.commands.registerCommand('meteor.deleteComplete', () => {
+    meteor.backSpace.deleteComplete()
+  });
+  // 打开官网
+	let openOfficialDisposable = vscode.commands.registerCommand('meteor.openOfficial', (uri) => {
+		open(url.official);
+	});
+  // swagger生成api
+	let meteorSwaggerDispoable = vscode.commands.registerCommand('meteor.swagger', async () => {
+		meteor.swagger.generate()
+	});
   
-  context.subscriptions.push(completionDisposible, functionCompletionDisposable)
+  context.subscriptions.push(completionDisposible, functionCompletionDisposable, blockSelectDisposable, deleteCompleteDisposable, openOfficialDisposable, meteorSwaggerDispoable)
 
 	// 服务器用node实现
 	let serverModule = context.asAbsolutePath(

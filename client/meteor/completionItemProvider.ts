@@ -6,7 +6,8 @@ import * as path from 'path';
 import { TAGS } from './tags/index';
 import { ATTRS } from './attributes/index';
 const pretty = require('pretty');
-import util from '../meteor/utils/util';
+import { setTabSpace, getWorkspaceRoot, getRelativePath } from '../meteor/utils/util';
+import Traverse from './utils/traverse';
 
 export interface TagObject {
   text: string,
@@ -80,16 +81,18 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
   ]
   private vueFiles: any = []
   private tabSpace: string = ''
+  private traverse: Traverse
 
   public constructor(config: WorkspaceConfiguration) {
     this.config = config
+    this.traverse = new Traverse(config, getWorkspaceRoot(window.activeTextEditor?.document.uri.path || ''))
   }
 
   // 自动补全
   autoComplement() {
     let editor: any = window.activeTextEditor;
     if (!editor) { return; }
-    this.workspaceRoot = util.getWorkspaceRoot(editor.document.uri.path)
+    this.workspaceRoot = getWorkspaceRoot(editor.document.uri.path)
     let txt = editor.document.lineAt(editor.selection.anchor.line).text;
     if(editor.document.lineCount <= editor.selection.anchor.line + 1) { return; }
     // 组件自动导入
@@ -98,34 +101,6 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
       return;
     }
     // 本地文件自动导入
-    let line = editor.selection.anchor.line;
-    let isLocalImport = line === 0;
-    let prevExplore = line > 3 ? 3 : line;
-    for (let i = 0; i < prevExplore; i++) {
-      if (/.*(<script|import|require).*/.test(editor.document.lineAt(line - i).text)) {
-        isLocalImport = true;
-        break;
-      }
-    }
-    if (isLocalImport) {
-      let search = editor.document.lineAt(line).text.trim();
-      if (search) {
-        let vueFiles = this.traverse('', search);
-        let suggestions = [];
-        vueFiles.forEach(vf => {
-          suggestions.push({
-            label: vf.name,
-            sortText: `1000${vf.name}`,
-            insertText: new SnippetString(`${vf.name}$0></${vf.name}>`),
-            kind: CompletionItemKind.Module,
-            detail: 'import internal file',
-            documentation: 'import internal file: ' + vf.path
-          });
-        });
-      }
-      return;
-    }
-
     let nextLineTxt = editor.document.lineAt(editor.selection.anchor.line + 1).text;
     
     let baseEmpty = txt.replace(/(\s)\S.*/gi, '$1');
@@ -170,7 +145,7 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
     let tag = txt.trim().replace(/<([\w-]*)[\s>].*/gi, '$1');
     // 没有vue遍历
     if (this.vueFiles.length === 0) {
-      this.vueFiles = this.traverse('.vue', '');
+      this.vueFiles = this.traverse.search('.vue', '');
     }
     for (let i = 0; i < this.vueFiles.length; i++) {
       const vf : any = this.vueFiles[i];
@@ -184,24 +159,28 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
             break;
           }
         }
-        line += 2;
-        if (countLine < line) {
-          return;
-        }
-        // 找import位置
-        while (/import /gi.test(editor.document.lineAt(line).text.trim())) {
-          if (countLine > line) {
-            line++;
-          } else {
-            break;
+        if (editor.document.lineAt(line + 1).text.includes('export default')) {
+          line += 1;
+        } else {
+          line += 1;
+          if (countLine < line) {
+            return;
+          }
+          // 找import位置
+          while (/import /gi.test(editor.document.lineAt(line).text.trim())) {
+            if (countLine > line) {
+              line++;
+            } else {
+              break;
+            }
           }
         }
+ 
         let name = vf.name.replace(/(-[a-z])/g, (_: any, c: string) => {
           return c ? c.toUpperCase() : '';
         }).replace(/-/gi, '');
-        let importString = `import ${name} from '${util.getRelativePath(editor.document.uri.path, path.join(this.workspaceRoot, vf.path))}'\n`;
+        let importString = `import ${name} from '${getRelativePath(editor.document.uri.path, path.join(this.workspaceRoot, vf.path))}'\n`;
         let importLine = line;
-        
         if (line < countLine) {
           let prorityInsertLine = 0;
           let secondInsertLine = 0;
@@ -275,109 +254,6 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
     }
   }
 
-  // 遍历组件
-  traverse(poster: any, search: any) {
-    let vueFiles: any[] = [];
-    let cond = null;
-    let that = this
-    if (this.config.componentPath && Array.isArray(this.config.componentPath) && this.config.componentPath.length > 0) {
-      cond = function (rootPath: any) {
-        return that.config.componentPath.indexOf(rootPath) !== -1;
-      };
-    } else {
-      let ignore = this.config.componentIgnore || [];
-      if (!Array.isArray(ignore)) {
-        ignore = [ignore];
-      }
-      ignore = ignore.concat(['node_modules', 'dist', 'build']);
-      cond = function (rootPath: any) {
-        return !(rootPath.charAt(0) === '.' || ignore.indexOf(rootPath) !== -1);
-      };
-    }
-    let rootPathes = fs.readdirSync(workspace.rootPath || '');
-    let prefix = this.config.pathAlias;
-    
-    for (let i = 0; i < rootPathes.length; i++) {
-      const rootPath = rootPathes[i];
-      if (cond(rootPath)) {
-        let stat = fs.statSync(path.join(workspace.rootPath || '', rootPath));
-        if (stat.isDirectory()) {
-          this.traverseHandle(rootPath, vueFiles, prefix, poster, search);
-        } else {
-          this.traverseAdd(rootPath, rootPath, vueFiles, prefix, poster, search);
-        }
-      }
-    }
-    return vueFiles;
-  }
-
-  // 遍历添加
-  traverseAdd(rootPath: string, dir: string, vueFiles: any[], prefix: any, poster: string, search: string) {
-    if (rootPath.endsWith(poster)) {
-      let posterReg = new RegExp('-?(.*)' + (poster ? poster : '\\.\\w*') + '$', 'gi');
-      let name = rootPath;
-      if (poster === '.vue') {
-        if (this.config.componentNamingRule === 'kebabCase') {
-          name = name.replace(/([A-Z_])/g, (_, c) => {
-            if (c === '_') {
-              return '-';
-            } else {
-              return c ? ('-' + c.toLowerCase()) : '';
-            }
-          }).replace(posterReg, '$1'); 
-        } else if (this.config.componentNamingRule === 'camelCase') {
-          name = name.replace(/(-[a-z])/g, (_, c) => {
-            return c ? c.toUpperCase() : '';
-          }).replace(/-/gi, '').replace(posterReg, '$1');
-        }  else if (this.config.componentNamingRule === 'CamelCase') {
-          name = name.replace(/(-[a-z])/g, (_, c) => {
-            return c ? c.toUpperCase() : '';
-          }).replace(/-/gi, '').replace(posterReg, '$1');
-          if (name && name.length > 0) {
-            name = name[0].toUpperCase() + name.substr(1, name.length);
-          }
-        }
-      } else {
-        name = name.replace(posterReg, '$1');
-      } 
-      dir = dir.replace(posterReg, '$1');
-      if (!search || (search && dir.includes(search))) {
-        vueFiles.push({
-          name: name,
-          path: dir + poster
-        });
-        // if (prefix.path === './' || prefix.path === '') {
-        //   vueFiles.push({
-        //     name: name,
-        //     path: prefix.alias + '/' + dir
-        //   });
-        // } else {
-        //   vueFiles.push({
-        //     name: name,
-        //     path: dir.replace(new RegExp('^' + prefix.path), prefix.alias)
-        //   });
-        // }
-      }
-    }
-  }
-
-  // 遍历处理
-  traverseHandle(postPath: string, vueFiles: any [], prefix: any, poster: string, search: string) {
-    let fileDirs = fs.readdirSync(path.join(workspace.rootPath || '', postPath));
-    for (let i = 0; i < fileDirs.length; i++) {
-      const rootPath = fileDirs[i];
-      if (!(rootPath.charAt(0) === '.')) {
-        let dir = path.join(postPath, rootPath);
-        let stat = fs.statSync(path.join(workspace.rootPath || '', dir));
-        if (stat.isDirectory()) {
-          this.traverseHandle(dir, vueFiles, prefix, poster, search);
-        } else {
-          this.traverseAdd(rootPath, dir, vueFiles, prefix, poster, search);
-        }
-      }
-    }
-  }
-
   // 获取预览标签
   getPreTag(): TagObject | undefined {
     let line = this._position.line;
@@ -440,18 +316,18 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
   getTagSuggestion() {
     let suggestions = [];
 
-    let id = 100;
+    let id = 1;
     // 添加vue组件提示
-    let vueFiles = this.traverse('.vue', '');
+    let vueFiles = this.traverse.search('.vue', '');
     this.vueFiles = vueFiles;
     for (let i = 0; i < vueFiles.length; i++) {
       const vf = vueFiles[i];
       suggestions.push({
-        label: vf.name + '[component]',
+        label: vf.name,
         sortText: `000${i}${vf.name}`,
         insertText: new SnippetString(`${vf.name}$0></${vf.name}>`),
-        kind: CompletionItemKind.File,
-        detail: '[meteor]vue component',
+        kind: CompletionItemKind.Folder,
+        detail: 'meteor',
         documentation: 'internal component: ' + vf.path,
         command: { command: 'meteor.functionCompletion', title: 'completions' }
       });
@@ -665,7 +541,7 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
 
   // 判断是否是{}括号开始
   isBrace() {
-    let startPosition = new Position(this._position.line, this._position.character - 2);
+    let startPosition = new Position(this._position.line, this._position.character > 2 ? this._position.character - 2 : this._position.character);
     return /[^{]{/gi.test(this._document.getText(new Range(startPosition, this._position)));
   }
 
@@ -696,9 +572,9 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
     search = search.replace(/^import/, '').trim();
     let suggestions: any[] = [];
     if (search) {
-      let vueFiles = this.traverse('', search);
-      vueFiles.forEach(vf => {
-        let filePath = vf.path.replace(/\\/gi, '/');
+      let files = this.traverse.search('', search);
+      files.forEach(vf => {
+        let filePath = getRelativePath(this._document.uri.path, path.join(this.workspaceRoot, vf.path));
         let camelName = vf.name.replace(/(-[a-z])/g, (_: any, c: any) => {
           return c ? c.toUpperCase() : '';
         }).replace(/-/gi, '');
@@ -848,13 +724,13 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
 
   // 提供完成项(提示入口)
   provideCompletionItems(document: TextDocument, position: Position, token: CancellationToken): ProviderResult<CompletionItem[] | CompletionList> {
+    console.log('provideCompletionItems')
     this._document = document;
     this._position = position;
-    this.workspaceRoot = util.getWorkspaceRoot(this._document.uri.path)
+    this.workspaceRoot = getWorkspaceRoot(this._document.uri.path)
     if (this.tabSpace.length === 0) {
-      this.tabSpace = util.setTabSpace()
+      this.tabSpace = setTabSpace()
     }
-    console.log('trigger completion')
     
     // import导入提示增强
     if (this.isImportState()) {
@@ -884,7 +760,6 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
         return this.getPropAttr(this._document.getText(), tag.text);
       }
     } else if (this.isTagStart()) { // 标签开始
-      console.log()
       switch (document.languageId) {
         case 'vue':
           return this.notInTemplate() ? [] : this.getTagSuggestion();
@@ -893,7 +768,9 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
       }
     } else if (this.isImport()) {
       return this.importSuggestion();
-    } else { return []; }
+    } else { 
+      return []; 
+    }
   }
 }
 

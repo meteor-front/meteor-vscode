@@ -1,0 +1,31 @@
+<view class="page">
+  <view class="m-head"></view>
+  <view class="m-search flex center">
+    <view class="flex-1">
+      <van-search value="{{ page.kw }}" placeholder="搜索商品" bind:search="searchShop" />
+    </view>
+    <view class="flex-scan">
+      <image src="../../images/scan.png" mode="widthFix" />
+    </view>
+  </view>
+  <scroll-view class="main" scroll-y="{{true}}" bindscrolltolower="queryList">
+    <view class="m-shop" wx:for="{{productList}}">
+      <view class="shop-avatar">
+        <image src="{{item.imgUrl}}" />
+      </view>
+      <view class="shop-info">
+        <view class="shop-name">{{item.name}}</view>
+        <view class="shop-bottom">
+          <view class="shop-price">
+            <text class="price">¥{{ item.price }}</text>
+            <text class="mark">¥{{ item.markPrice }}</text>
+          </view>
+          <view class="mani">
+            <van-button type="warning" round size="mini" wx:if="{{item.claimStatus === 1}}" disabled data-id="{{item.productId}}" bind:tap="getShop">已认领</van-button>
+            <van-button type="primary" wx:else round size="mini" data-id="{{item.productId}}" bind:tap="getShop">认领</van-button>
+          </view>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+</view>
