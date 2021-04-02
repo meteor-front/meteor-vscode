@@ -28,9 +28,9 @@ export function activate(context: vscode.ExtensionContext) {
   const meteor = new Meteor(context)
   
   // 为标签、属性提示提供自动完成功能, 关闭标签功能
-  let completionDisposible = vscode.languages.registerCompletionItemProvider(['vue', 'javascript', 'html', 'wxml'], meteor.completionItemProvider, '' ,':', '<', '"', "'", '/', '@', '(', '>', '{');
+  vscode.languages.registerCompletionItemProvider(['vue', 'javascript', 'html', 'wxml'], meteor.completionItemProvider, '' ,':', '<', '"', "'", '/', '@', '(', '>', '{');
   // 函数补全函数
-  let functionCompletionDisposable = vscode.commands.registerCommand('meteor.functionCompletion', () => {
+  vscode.commands.registerCommand('meteor.functionCompletion', () => {
     let editor = vscode.window.activeTextEditor;
     if (!editor) { return; }
     let txt = editor.document.lineAt(editor.selection.anchor.line).text;
@@ -42,39 +42,39 @@ export function activate(context: vscode.ExtensionContext) {
     }
   });
   // 代码块选择
-  let blockSelectDisposable = vscode.commands.registerCommand('meteor.blockSelect', () => {
+  vscode.commands.registerCommand('meteor.blockSelect', () => {
       meteor.block.select()
   });
   // 删除处理函数
-  let deleteCompleteDisposable = vscode.commands.registerCommand('meteor.deleteComplete', () => {
+  vscode.commands.registerCommand('meteor.deleteComplete', () => {
     meteor.backSpace.deleteComplete()
   });
   // 打开官网
-	let openOfficialDisposable = vscode.commands.registerCommand('meteor.openOfficial', (uri) => {
+	vscode.commands.registerCommand('meteor.openOfficial', (uri) => {
 		open(url.official);
 	});
   // swagger生成api
-	let meteorSwaggerDispoable = vscode.commands.registerCommand('meteor.swagger', async () => {
+	vscode.commands.registerCommand('meteor.swagger', async () => {
 		meteor.swagger.generate()
 	});
   // 页面生成
-	let newPageDisposable = vscode.commands.registerCommand('meteor.newPage', (uri) => {
+	vscode.commands.registerCommand('meteor.newPage', (uri) => {
 		meteor.newPage.showQuickPick(context, uri)
 	});
   // 同步数据
-	let meteorSyncDispoable = vscode.commands.registerCommand('meteor.sync', async () => {
+	vscode.commands.registerCommand('meteor.sync', async () => {
 		meteor.sync();
 	});
   // 上传页面/组件
-	let uploadDisposable = vscode.commands.registerCommand('meteor.upload', (activeTab) => {
+	vscode.commands.registerCommand('meteor.upload', (activeTab) => {
 		UploadPanel.createOrShow(context.extensionPath, activeTab);
 	});
   // 新建工程
-	let newProjectDisposable = vscode.commands.registerCommand('meteor.newProject', () => {
+	vscode.commands.registerCommand('meteor.newProject', () => {
 		NewProjectPanel.createOrShow(context.extensionPath);
 	});
   // 打开工程目录
-	let openProjectDisposable = vscode.commands.registerCommand("meteor.openProject", (node: string | any) => {
+	vscode.commands.registerCommand("meteor.openProject", (node: string | any) => {
 		let projectDir = NewProjectPanel.projectDir;
 		if (os.platform().includes('win')) {
 			projectDir = '/' + projectDir.replace(/\\/gi, '/');
@@ -84,21 +84,17 @@ export function activate(context: vscode.ExtensionContext) {
 					value => vscode.window.showInformationMessage("打开工程失败！"));
 	});
   // 生成组件
-	let newComponentDisposable = vscode.commands.registerCommand('meteor.newComponent', (uri) => {
+	vscode.commands.registerCommand('meteor.newComponent', (uri) => {
 		meteor.newPage.showComponentQuickPick(context, uri);
 	});
   // 接口生成
-	let apiDisposable = vscode.commands.registerCommand('meteor.api', (uri) => {
+	vscode.commands.registerCommand('meteor.api', (uri) => {
 		meteor.newPage.api(context, uri);
 	});
   // 到达定义函数
-  let meteorDefinition = vscode.languages.registerDefinitionProvider(['vue', 'javascript', 'html'], new MeteorDefinitionProvider());
-  let registrationHover = vscode.languages.registerHoverProvider('vue', new DocumentHoverProvider);
-  let jsCompletion = vscode.languages.registerCompletionItemProvider(['javascript', 'html', 'vue'], new JsCompletionItemProvider(), '.', '(');
-  
-  context.subscriptions.push(completionDisposible, functionCompletionDisposable, blockSelectDisposable, deleteCompleteDisposable, openOfficialDisposable, meteorSwaggerDispoable, 
-    newPageDisposable, meteorSyncDispoable, uploadDisposable, newProjectDisposable, openProjectDisposable, newComponentDisposable, apiDisposable, meteorDefinition,
-    registrationHover, jsCompletion)
+  vscode.languages.registerDefinitionProvider(['vue', 'javascript', 'html'], new MeteorDefinitionProvider());
+  vscode.languages.registerHoverProvider('vue', new DocumentHoverProvider);
+  vscode.languages.registerCompletionItemProvider(['javascript', 'html', 'vue'], new JsCompletionItemProvider(), '.', '(');
 
 	// 服务器用node实现
 	let serverModule = context.asAbsolutePath(

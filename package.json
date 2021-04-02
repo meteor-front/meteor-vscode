@@ -108,6 +108,14 @@
       {
         "command": "meteor.api",
         "title": "meteor: api"
+      },
+      {
+        "command": "meteor.blockSelect",
+        "title": "meteor: blockSelect"
+      },
+      {
+        "command": "meteor.functionCompletion",
+        "title": "meteor: functionCompletion"
       }
     ],
     "keybindings": [
@@ -260,21 +268,13 @@
     "@types/node": "^14.14.31",
     "@types/shelljs": "^0.8.8",
     "@types/vscode": "^1.52.0",
-    "axios": "^0.21.1",
-    "camelcase": "^6.2.0",
     "esbuild": "^0.8.55",
     "fs-extra": "^9.1.0",
-    "glob": "^7.1.6",
     "js-yaml": "^4.0.0",
     "lint-staged": "^10.5.4",
-    "lodash": "^4.17.21",
     "minimist": "^1.2.5",
     "mocha": "^8.3.0",
     "npm-run-all": "^4.1.5",
-    "opn": "^6.0.0",
-    "param-case": "^3.0.4",
-    "prettier": "^2.2.1",
-    "pretty": "^2.0.0",
     "rollup": "^2.40.0",
     "rollup-plugin-delete": "^2.0.0",
     "rollup-plugin-dts": "^2.0.1",
@@ -289,5 +289,14 @@
     "vscode-test": "^1.5.1"
   },
   "dependencies": {
+    "axios": "^0.21.1",
+    "camelcase": "^6.2.0",
+    "execa": "^5.0.0",
+    "glob": "^7.1.6",
+    "lodash": "^4.17.21",
+    "opn": "^6.0.0",
+    "param-case": "^3.0.4",
+    "prettier": "^2.2.1",
+    "pretty": "^2.0.0"
   }
 }
