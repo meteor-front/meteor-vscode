@@ -7,6 +7,13 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import Meteor from './meteor/meteor'
 import { open, url } from './meteor/utils/util'
+import UploadPanel from './meteor/functions/upload'
+import NewProjectPanel from './meteor/functions/newProject'
+import { MeteorDefinitionProvider } from './meteor/definitionProvider';
+import DocumentHoverProvider from './meteor/DocumentHoverProvider';
+import { JsCompletionItemProvider } from './meteor/jsComplete';
+
+const os = require("os");
 
 import {
 	LanguageClient,
@@ -29,7 +36,7 @@ export function activate(context: vscode.ExtensionContext) {
     let txt = editor.document.lineAt(editor.selection.anchor.line).text;
     if (/.*@\w*=\"\w.*\"/gi.test(txt)) {
       // 定义方法，并跳到方法处
-      // zlst.generateMethod();
+      meteor.generateMethod();
     } else {
       meteor.completionItemProvider.autoComplement()
     }
@@ -50,8 +57,48 @@ export function activate(context: vscode.ExtensionContext) {
 	let meteorSwaggerDispoable = vscode.commands.registerCommand('meteor.swagger', async () => {
 		meteor.swagger.generate()
 	});
+  // 页面生成
+	let newPageDisposable = vscode.commands.registerCommand('meteor.newPage', (uri) => {
+		meteor.newPage.showQuickPick(context, uri)
+	});
+  // 同步数据
+	let meteorSyncDispoable = vscode.commands.registerCommand('meteor.sync', async () => {
+		meteor.sync();
+	});
+  // 上传页面/组件
+	let uploadDisposable = vscode.commands.registerCommand('meteor.upload', (activeTab) => {
+		UploadPanel.createOrShow(context.extensionPath, activeTab);
+	});
+  // 新建工程
+	let newProjectDisposable = vscode.commands.registerCommand('meteor.newProject', () => {
+		NewProjectPanel.createOrShow(context.extensionPath);
+	});
+  // 打开工程目录
+	let openProjectDisposable = vscode.commands.registerCommand("meteor.openProject", (node: string | any) => {
+		let projectDir = NewProjectPanel.projectDir;
+		if (os.platform().includes('win')) {
+			projectDir = '/' + projectDir.replace(/\\/gi, '/');
+		}
+			vscode.commands.executeCommand("vscode.openFolder", vscode.Uri.parse(projectDir), false)
+					.then(value => ({}),  // done
+					value => vscode.window.showInformationMessage("打开工程失败！"));
+	});
+  // 生成组件
+	let newComponentDisposable = vscode.commands.registerCommand('meteor.newComponent', (uri) => {
+		meteor.newPage.showComponentQuickPick(context, uri);
+	});
+  // 接口生成
+	let apiDisposable = vscode.commands.registerCommand('meteor.api', (uri) => {
+		meteor.newPage.api(context, uri);
+	});
+  // 到达定义函数
+  let meteorDefinition = vscode.languages.registerDefinitionProvider(['vue', 'javascript', 'html'], new MeteorDefinitionProvider());
+  let registrationHover = vscode.languages.registerHoverProvider('vue', new DocumentHoverProvider);
+  let jsCompletion = vscode.languages.registerCompletionItemProvider(['javascript', 'html', 'vue'], new JsCompletionItemProvider(), '.', '(');
   
-  context.subscriptions.push(completionDisposible, functionCompletionDisposable, blockSelectDisposable, deleteCompleteDisposable, openOfficialDisposable, meteorSwaggerDispoable)
+  context.subscriptions.push(completionDisposible, functionCompletionDisposable, blockSelectDisposable, deleteCompleteDisposable, openOfficialDisposable, meteorSwaggerDispoable, 
+    newPageDisposable, meteorSyncDispoable, uploadDisposable, newProjectDisposable, openProjectDisposable, newComponentDisposable, apiDisposable, meteorDefinition,
+    registrationHover, jsCompletion)
 
 	// 服务器用node实现
 	let serverModule = context.asAbsolutePath(

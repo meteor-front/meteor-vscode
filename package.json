@@ -58,7 +58,13 @@
     "onCommand:meteor.blockSelect",
     "onCommand:meteor.deleteComplete",
     "onCommand:meteor.openOfficial",
-    "onCommand:meteor.swagger"
+    "onCommand:meteor.swagger",
+    "onCommand:meteor.newPage",
+    "onCommand:meteor.sync",
+    "onCommand:meteor.upload",
+    "onCommand:meteor.newProject",
+    "onCommand:meteor.newComponent",
+    "onCommand:meteor.api"
   ],
   "main": "./dist/meteorMain.js",
   "contributes": {
@@ -78,6 +84,30 @@
       {
         "command": "meteor.swagger",
         "title": "meteor: swagger"
+      },
+      {
+        "command": "meteor.newPage",
+        "title": "生成页面"
+      },
+      {
+        "command": "meteor.sync",
+        "title": "meteor: sync"
+      },
+      {
+        "command": "meteor.upload",
+        "title": "上传页面/组件"
+      },
+      {
+        "command": "meteor.newProject",
+        "title": "新建工程"
+      },
+      {
+        "command": "meteor.newComponent",
+        "title": "生成组件"
+      },
+      {
+        "command": "meteor.api",
+        "title": "meteor: api"
       }
     ],
     "keybindings": [
@@ -95,12 +125,58 @@
         "key": "alt+s",
         "command": "meteor.swagger",
         "when": "editorTextFocus"
+      },
+      {
+        "key": "alt+c",
+        "command": "meteor.newComponent",
+        "when": "editorTextFocus"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "javascript",
+        "path": "./snippets/element.json"
+      },
+      {
+        "language": "javascript",
+        "path": "./snippets/vue.json"
+      },
+      {
+        "language": "vue-html",
+        "path": "./snippets/element-html.json"
+      },
+      {
+        "language": "vue-html",
+        "path": "./snippets/vue-html.json"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "meteor",
+          "title": "Meteor",
+          "icon": "asset/logo.png"
+        }
+      ]
+    },
+    "views": {
+      "meteor": [
+        {
+          "id": "meteorExplorer",
+          "name": "Meteor"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "meteorExplorer",
+        "contents": "Meteor\n[新建工程](command:meteor.newProject) \n[上传页面/组件](command:meteor.upload)\n查看[文档](http://www.80fight.cn/)学习Meteor"
       }
     ],
     "menus": {
       "explorer/context": [
         {
-          "command": "meteor.pageNew",
+          "command": "meteor.newPage",
           "when": "explorerResourceIsFolder",
           "group": "0_meteor"
         }
@@ -131,8 +207,16 @@
           "description": "assign prefix to replace in the file path",
           "default": {
             "alias": "@",
-            "path": "src"
+            "path": "./src"
           }
+        },
+        "meteor.rootPathPage": {
+          "type": "string",
+          "default": "src/views"
+        },
+        "meteor.rootPathComponent": {
+          "type": "string",
+          "default": "src/components"
         },
         "meteor.rootPathApi": {
           "type": "string",
@@ -143,6 +227,22 @@
           "type": "string",
           "description": "root path folder for vuex store generate",
           "default": "src/store"
+        },
+        "meteor.rootPath": {
+          "type": "string",
+          "description": "root path for new project",
+          "default": ""
+        },
+        "meteor.swaggerUrl": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "swagger url"
+        },
+        "meteor.user": {
+          "type": "string",
+          "default": ""
         }
       }
     }
@@ -167,10 +267,12 @@
     "glob": "^7.1.6",
     "js-yaml": "^4.0.0",
     "lint-staged": "^10.5.4",
+    "lodash": "^4.17.21",
     "minimist": "^1.2.5",
     "mocha": "^8.3.0",
     "npm-run-all": "^4.1.5",
     "opn": "^6.0.0",
+    "param-case": "^3.0.4",
     "prettier": "^2.2.1",
     "pretty": "^2.0.0",
     "rollup": "^2.40.0",

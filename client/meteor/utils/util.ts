@@ -1,5 +1,5 @@
 import * as os from 'os'
-import { workspace, commands, window } from 'vscode';
+import { workspace, commands, Webview, Uri } from 'vscode';
 import * as path from 'path'
 import * as fs from 'fs'
 const opn = require('opn');
@@ -78,4 +78,48 @@ export function winRootPathHandle(pagePath: string) {
   } else {
     return pagePath;
   }
+}
+
+// 资源地址转换
+function _toUri(webview: Webview, extensionPath: string, basePath: string, fileName: string) {
+  return webview.asWebviewUri(Uri.file(path.join(extensionPath, basePath, fileName)));
+}
+
+function getNonce() {
+  let text = '';
+  const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  for (let i = 0; i < 32; i++) {
+    text += possible.charAt(Math.floor(Math.random() * possible.length));
+  }
+  return text;
+}
+
+// 获取webview内容
+export function getHtmlForWebview(webview: Webview, extensionPath: string, path: string, title: string) {
+  const nonce = getNonce();
+  const cssChunk = _toUri(webview,  extensionPath, 'media', '/css/chunk-vendors.css');
+  const cssUri = _toUri(webview,  extensionPath, 'media', 'css/app.css');
+  const vendor = _toUri(webview,  extensionPath, 'media', 'js/chunk-vendors.js');
+  const app = _toUri(webview,  extensionPath, 'media', 'js/app.js');
+
+  return `<!DOCTYPE html>
+  <html lang=en>
+  
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${title}</title>
+    <link nonce="${nonce}" href="${cssChunk}" rel=stylesheet>
+    <link nonce="${nonce}" href="${cssUri}" rel=stylesheet>
+  </head>
+  
+  <body><noscript><strong>We're sorry but ${title} doesn't work properly without JavaScript enabled. Please enable it to
+        continue.</strong></noscript>
+    <div id=app></div>
+    <script>var rootPath = '${path}'</script>
+    <script nonce="${nonce}" src="${vendor}"></script>
+    <script nonce="${nonce}" src="${app}"></script>
+  </body>
+  
+  </html>`;
 }

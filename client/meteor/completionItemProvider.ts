@@ -724,7 +724,6 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
 
   // 提供完成项(提示入口)
   provideCompletionItems(document: TextDocument, position: Position, token: CancellationToken): ProviderResult<CompletionItem[] | CompletionList> {
-    console.log('provideCompletionItems')
     this._document = document;
     this._position = position;
     this.workspaceRoot = getWorkspaceRoot(this._document.uri.path)

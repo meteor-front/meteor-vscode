@@ -4,7 +4,7 @@ import { getWorkspaceRoot, winRootPathHandle } from '../utils/util'
 import * as path from 'path';
 import * as fs from 'fs'
 const camelCase = require('camelcase');
-import PageNew from './pageNew'
+import NewPage from './newPage'
 
 export default class SwaggerFactory {
   private config: WorkspaceConfiguration
@@ -78,7 +78,6 @@ export default class SwaggerFactory {
             // 判断modules目录是否存在
             let hasModules = true;
             let modulesPath = path.join(this.workspaceRoot, rootPathStore, 'modules');
-            console.log(modulesPath);
             try {
               fs.statSync(modulesPath);
             } catch (error) {
@@ -205,7 +204,7 @@ let func = `export function ${apiName}(${paramName}) {
                     if (!singleApiPathName.endsWith('.js')) {
                       singleApiPathName = singleApiPathName + '.js';
                     }
-                    let apiStore = PageNew.apiStoreGenerate(apiName, singleApiPathName);
+                    let apiStore = NewPage.apiStoreGenerate(apiName, singleApiPathName);
                     let hasModules = true;
                     let modulesPath = path.join(this.workspaceRoot, this.config.get('rootPathStore') || '', 'modules');
                     try {
@@ -221,17 +220,16 @@ let func = `export function ${apiName}(${paramName}) {
                       apiStoreJs = path.join(this.workspaceRoot, rootPathStore,  singleApiPathName);
                     }
                     apiStoreJs = winRootPathHandle(apiStoreJs);
-                    console.log('apiStoreJs', apiStoreJs);
                     try {
                       // 判断是否存在store文件
                       fs.statSync(apiStoreJs);
-                      PageNew.fileGenerate(apiStoreJs, apiStoreJs, 'apiEachStore', {
+                      NewPage.fileGenerate(apiStoreJs, apiStoreJs, 'apiEachStore', {
                         apiStore
                       });
                     } catch (error) {
-                      let pathTemplate = path.join(this.context.extensionUri.path, PageNew.templateRoot, 'api.js');
+                      let pathTemplate = path.join(this.context.extensionUri.path, NewPage.templateRoot, 'api.js');
                       pathTemplate = winRootPathHandle(pathTemplate);
-                      PageNew.fileGenerate(apiStoreJs, pathTemplate, 'apiEachStore', {
+                      NewPage.fileGenerate(apiStoreJs, pathTemplate, 'apiEachStore', {
                         apiStore
                       });
                     }
