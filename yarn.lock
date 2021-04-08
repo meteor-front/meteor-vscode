@@ -106,6 +106,51 @@
   resolved "https://registry.npm.taobao.org/@tootallnate/once/download/@tootallnate/once-1.1.2.tgz#ccb91445360179a04e7fe6aff78c00ffc1eeaf82"
   integrity sha1-zLkURTYBeaBOf+av94wA/8Hur4I=
 
+"@types/babel-core@^6.25.6":
+  version "6.25.6"
+  resolved "https://registry.npm.taobao.org/@types/babel-core/download/@types/babel-core-6.25.6.tgz?cache=0&sync_timestamp=1613378681750&other_urls=https%3A%2F%2Fregistry.npm.taobao.org%2F%40types%2Fbabel-core%2Fdownload%2F%40types%2Fbabel-core-6.25.6.tgz#9e4faefcb300fd3abf0d2c2d85c505071462c1e1"
+  integrity sha1-nk+u/LMA/Tq/DSwthcUFBxRiweE=
+  dependencies:
+    "@types/babel-generator" "*"
+    "@types/babel-template" "*"
+    "@types/babel-traverse" "*"
+    "@types/babel-types" "*"
+    "@types/babylon" "*"
+
+"@types/babel-generator@*":
+  version "6.25.3"
+  resolved "https://registry.npm.taobao.org/@types/babel-generator/download/@types/babel-generator-6.25.3.tgz#8f06caa12d0595a0538560abe771966d77d29286"
+  integrity sha1-jwbKoS0FlaBThWCr53GWbXfSkoY=
+  dependencies:
+    "@types/babel-types" "*"
+
+"@types/babel-template@*":
+  version "6.25.2"
+  resolved "https://registry.npm.taobao.org/@types/babel-template/download/@types/babel-template-6.25.2.tgz?cache=0&sync_timestamp=1613378683125&other_urls=https%3A%2F%2Fregistry.npm.taobao.org%2F%40types%2Fbabel-template%2Fdownload%2F%40types%2Fbabel-template-6.25.2.tgz#3c4cde02dbcbbf461a58d095a9f69f35eabd5f06"
+  integrity sha1-PEzeAtvLv0YaWNCVqfafNeq9XwY=
+  dependencies:
+    "@types/babel-types" "*"
+    "@types/babylon" "*"
+
+"@types/babel-traverse@*":
+  version "6.25.5"
+  resolved "https://registry.npm.taobao.org/@types/babel-traverse/download/@types/babel-traverse-6.25.5.tgz?cache=0&sync_timestamp=1613378682785&other_urls=https%3A%2F%2Fregistry.npm.taobao.org%2F%40types%2Fbabel-traverse%2Fdownload%2F%40types%2Fbabel-traverse-6.25.5.tgz#6d293cf7523e48b524faa7b86dc3c488191484e5"
+  integrity sha1-bSk891I+SLUk+qe4bcPEiBkUhOU=
+  dependencies:
+    "@types/babel-types" "*"
+
+"@types/babel-types@*":
+  version "7.0.9"
+  resolved "https://registry.npm.taobao.org/@types/babel-types/download/@types/babel-types-7.0.9.tgz?cache=0&sync_timestamp=1613378684178&other_urls=https%3A%2F%2Fregistry.npm.taobao.org%2F%40types%2Fbabel-types%2Fdownload%2F%40types%2Fbabel-types-7.0.9.tgz#01d7b86949f455402a94c788883fe4ba574cad41"
+  integrity sha1-Ade4aUn0VUAqlMeIiD/kuldMrUE=
+
+"@types/babylon@*":
+  version "6.16.5"
+  resolved "https://registry.npm.taobao.org/@types/babylon/download/@types/babylon-6.16.5.tgz?cache=0&sync_timestamp=1613378687828&other_urls=https%3A%2F%2Fregistry.npm.taobao.org%2F%40types%2Fbabylon%2Fdownload%2F%40types%2Fbabylon-6.16.5.tgz#1c5641db69eb8cdf378edd25b4be7754beeb48b4"
+  integrity sha1-HFZB22nrjN83jt0ltL53VL7rSLQ=
+  dependencies:
+    "@types/babel-types" "*"
+
 "@types/estree@*":
   version "0.0.47"
   resolved "https://registry.npm.taobao.org/@types/estree/download/@types/estree-0.0.47.tgz#d7a51db20f0650efec24cd04994f523d93172ed4"

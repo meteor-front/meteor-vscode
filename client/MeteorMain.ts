@@ -91,6 +91,10 @@ export function activate(context: vscode.ExtensionContext) {
 	vscode.commands.registerCommand('meteor.api', (uri) => {
 		meteor.newPage.api(context, uri);
 	});
+  // meteor服务器调用的接口
+  vscode.commands.registerCommand('meteor.apiGenerateFromServer', (params) => {
+    meteor.swagger.apiGenerateFromServer(params)
+  })
   // 到达定义函数
   vscode.languages.registerDefinitionProvider(['vue', 'javascript', 'html'], new MeteorDefinitionProvider());
   vscode.languages.registerHoverProvider('vue', new DocumentHoverProvider);
@@ -102,7 +106,7 @@ export function activate(context: vscode.ExtensionContext) {
 	);
 	// The debug options for the server
 	// --inspect=6009: runs the server in Node's Inspector mode so VS Code can attach to the server for debugging
-	let debugOptions = { execArgv: ['--nolazy', '--inspect=6009'] };
+	let debugOptions = { execArgv: ['--nolazy', '--inspect=6010'] };
 
 	// If the extension is launched in debug mode then the debug server options are used
 	// Otherwise the run options are used
@@ -117,7 +121,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	// Options to control the language client
 	let clientOptions: LanguageClientOptions = {
-		documentSelector: [{ scheme: 'file', language: 'plaintext' }],
+		documentSelector: [{ scheme: 'file', language: 'vue' }, { scheme: 'file', language: 'javascript' }],
 		synchronize: {
 			fileEvents: vscode.workspace.createFileSystemWatcher('**/.clientrc')
 		}

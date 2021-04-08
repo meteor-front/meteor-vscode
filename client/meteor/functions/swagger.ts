@@ -1,6 +1,6 @@
-import { WorkspaceConfiguration, window, ConfigurationTarget, ExtensionContext } from 'vscode'
+import { WorkspaceConfiguration, window, ConfigurationTarget, ExtensionContext, Range, Position } from 'vscode'
 import { AxiosInstance } from 'axios';
-import { getWorkspaceRoot, winRootPathHandle } from '../utils/util'
+import { getWorkspaceRoot, winRootPathHandle, getRelativePath } from '../utils/util'
 import * as path from 'path';
 import * as fs from 'fs'
 const camelCase = require('camelcase');
@@ -11,27 +11,28 @@ export default class SwaggerFactory {
   private fetch: AxiosInstance
   private workspaceRoot: string
   private context: ExtensionContext
+  private projectName: string
   constructor(config:WorkspaceConfiguration, fetch: AxiosInstance, context: ExtensionContext) {
     this.config = config
     this.fetch = fetch
     this.context = context
     this.workspaceRoot = getWorkspaceRoot('')
+    this.projectName = this.workspaceRoot.replace(/.*\//gi, '')
   }
   // swagger生成api
   async generate() {
-    let swaggerUrl: string[] = this.config.get('swaggerUrl') || [];
-    let addText = '新增';
-    let url = await window.showQuickPick([addText].concat(swaggerUrl), {
-      placeHolder: '请选择swagger地址'
-    });
+    let swaggerUrlConfig: any = this.config.get('swaggerUrl') || [];
+    let url = swaggerUrlConfig[this.projectName] || ''
     // 新增操作
-    if (url === addText) {
+    if (!url) {
       url = await window.showInputBox({
         placeHolder: '请输入swagger地址'
       });
-      if (url && swaggerUrl.indexOf(url) === -1) {
-        swaggerUrl.push(url);
-        this.config.update('swaggerUrl', swaggerUrl, ConfigurationTarget.Global);
+      if (url) {
+        swaggerUrlConfig[this.projectName] = url
+        this.config.update('swaggerUrl', swaggerUrlConfig, ConfigurationTarget.Global);
+      } else {
+        return
       }
     }
     // 生成选项
@@ -322,4 +323,124 @@ export default {
     }
   }
 
+  // 从服务端生成api
+  apiGenerateFromServer(apiParams: any) {
+    switch (apiParams.type) {
+      case 'api':
+        this.apiGenerateFromServerInApi(apiParams)
+        break;
+      case 'store':
+          this.apiGenerateFromServerInStore(apiParams)
+          break;
+    
+      default:
+        break;
+    }
+  }
+
+  // 直接调用api里面的接口
+  apiGenerateFromServerInApi(apiParams: any) {
+    let editor = window.activeTextEditor;
+    if (!editor) { return; }
+    let relativePath = getRelativePath(editor.document.uri.path, apiParams.path)
+    let currentLine = 0
+    let count = editor.document.lineCount
+    let endReg = /\s*export\s*default\s*{\s*/gi
+    while (currentLine < count) {
+      let text = editor.document.lineAt(currentLine).text
+      if (endReg.test(text)) {
+        break
+      }
+      // 存在import，且导入名称不存在
+      if (new RegExp(`import\\s*{.*}\\s*from\\s*'${relativePath.replace(/\//gi, '\\\/')}'`, 'gi').test(text)) {
+        if (!new RegExp(`{.*${apiParams.name}.*}`, 'gi').test(text)) {
+          editor.edit((editBuilder: any) => {
+            editBuilder.insert(new Position(currentLine, text.replace(/\s*}.*/gi, '').length), `, ${apiParams.name}`);
+          })
+        }
+        return
+      }
+      currentLine++
+    }
+    // 说明没有import过
+    if (currentLine < count) {
+      editor.edit((editBuilder: any) => {
+        editBuilder.insert(new Position(currentLine, 0), `import { ${apiParams.name} } from '${relativePath}'\n`);
+      })
+    }
+  }
+
+  // 通过store调用接口
+  apiGenerateFromServerInStore(apiParams: any) {
+    let editor = window.activeTextEditor;
+    if (!editor) { return; }
+    let relativePath = getRelativePath(editor.document.uri.path, apiParams.path)
+    let fileName = relativePath.replace(/.*\/(\w*).\w*/gi, '$1')
+    let currentLine = 0
+    let count = editor.document.lineCount
+    let endReg = /\s*export\s*default\s*{\s*/gi
+    let isImport = false
+    let insertList: any[] = []
+    while (currentLine < count) {
+      let text = editor.document.lineAt(currentLine).text
+      if (endReg.test(text)) {
+        break
+      }
+      // 存在import，且导入名称不存在
+      if (new RegExp(`\\s*import\\s*{.*}\\s*from\\s*'vuex'`, 'gi').test(text)) {
+        if (!new RegExp(`{.*mapActions.*}`, 'gi').test(text)) {
+          insertList.push([new Position(currentLine, text.replace(/\s*}.*/gi, '').length), `, mapActions`])
+        }
+        isImport = true
+        break
+      }
+      currentLine++
+    }
+    // 说明没有import过
+    if (currentLine < count && !isImport) {
+      insertList.push([new Position(currentLine, 0), `import { mapActions } from 'vuex'\n`])
+    }
+
+    // 找到method开始位置
+    let methodsLine = currentLine
+    while (currentLine < count) {
+      let text = editor.document.lineAt(currentLine).text
+      if (/\s*methods\s*:\s*{\s*/gi.test(text)) {
+        methodsLine = currentLine
+        break
+      }
+      currentLine++
+    }
+    // 插入mapAction
+    isImport = true
+    currentLine++
+    while(currentLine < count) {
+      let text = editor.document.lineAt(currentLine).text
+      if (new RegExp(`\\s*...mapActions\\(\\s*'\\s*\\w*\\s*'\\s*,\\s*\\[.*\\]\\s*\\)\\s*,\\s*`, 'gi').test(text)) {
+        if (new RegExp(`\\s*...mapActions\\(\\s*'\\s*${fileName}\\s*'\\s*,\\s*\\[.*\\]\\s*\\)\\s*,\\s*`, 'gi').test(text)) {
+          // 已导入文件，判断接口是否导入
+          if (!new RegExp(`\\[.*${apiParams.name}.*\\]`, 'gi').test(text)) {
+            insertList.push([new Position(currentLine, text.replace(/\s*\].*/gi, '').length), `, '${apiParams.name}' `])
+          }
+          isImport = true
+          break
+        }
+      } else {
+        isImport = false
+        break
+      }
+      currentLine++
+    }
+    if (currentLine < count && !isImport) {
+      insertList.push([new Position(methodsLine + 1, 0), `    ...mapActions('${fileName}', ['${apiParams.name}']),\n`])
+    }
+    if (insertList.length > 0) {
+      editor.edit((editBuilder: any) => {
+        for (let i = 0; i < insertList.length; i++) {
+          const insertText = insertList[i]
+          editBuilder.insert(insertText[0], insertText[1]);
+        }
+      })
+    }
+  }
 }

@@ -15,11 +15,15 @@ import {
 	TextDocumentPositionParams,
 	TextDocumentSyncKind,
 	InitializeResult
+  
 } from 'vscode-languageserver/node';
 
 import {
 	TextDocument
 } from 'vscode-languageserver-textdocument';
+import Utils from './utils'
+import Completion from './completion'
+// import * as babel from "babel-core"
 
 // 创建服务器连接，通信：Node's IPC
 let connection = createConnection(ProposedFeatures.all);
@@ -27,6 +31,8 @@ let documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
 let hasConfigurationCapability: boolean = false;
 let hasWorkspaceFolderCapability: boolean = false;
 let hasDiagnosticRelatedInformationCapability: boolean = false;
+let workspaceFolders: any [] = []
+let workspaceRoot: string = ''
 
 connection.onInitialize((params: InitializeParams) => {
 	let capabilities = params.capabilities;
@@ -60,6 +66,9 @@ connection.onInitialize((params: InitializeParams) => {
 				supported: true
 			}
 		};
+    params.workspaceFolders?.map((workspace) => {
+      workspaceFolders.push(workspace.uri)
+    })
 	}
 	return result;
 });
@@ -78,6 +87,7 @@ connection.onInitialized(() => {
 
 // 监听配置改变
 connection.onDidChangeConfiguration(change => {
+	connection.console.log('content, config');
 });
 
 // 监听文件关闭
@@ -86,6 +96,7 @@ documents.onDidClose(e => {
 
 // 监听文件内容改变
 documents.onDidChangeContent(change => {
+	connection.console.log('content, change');
 });
 
 // 监听文件改变
@@ -97,16 +108,21 @@ connection.onDidChangeWatchedFiles(_change => {
 // 提供初始完成项
 connection.onCompletion(
 	(_textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
-		// The pass parameter contains the position of the text document in
-		// which code complete got requested. For the example we ignore this
-		// info and always provide the same completion items.
-		return [];
+    connection.console.log('onCompletion')
+    // connection.console.log(workspaceFolders.toString())
+    // connection.console.log(_textDocumentPosition.textDocument.uri)
+    if (!workspaceRoot) {
+      workspaceRoot = Utils.getWorkspaceRoot(workspaceFolders, _textDocumentPosition.textDocument.uri)
+    }
+    return new Completion(workspaceRoot, connection).provider()
 	}
 );
 
-// 完成项解析内容
+// 完成项进一步说明解析内容
 connection.onCompletionResolve(
 	(item: CompletionItem): CompletionItem => {
+    connection.console.log('item')
+    connection.console.log(item.label)
 		return item;
 	}
 );

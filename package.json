@@ -242,10 +242,7 @@
           "default": ""
         },
         "meteor.swaggerUrl": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
+          "type": "object",
           "description": "swagger url"
         },
         "meteor.user": {
@@ -289,6 +286,7 @@
     "vscode-test": "^1.5.1"
   },
   "dependencies": {
+    "@types/babel-core": "^6.25.6",
     "axios": "^0.21.1",
     "camelcase": "^6.2.0",
     "execa": "^5.0.0",
