@@ -15,4 +15,7 @@ export default class Utils {
     }
     return url
   }
-}``
+  static getProjectName(rootPath: string) {
+    return rootPath.replace(/.*\//gi, '')
+  }
+}

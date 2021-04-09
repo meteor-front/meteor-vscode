@@ -1,7 +1,6 @@
 import * as os from 'os'
 import { workspace, commands, Webview, Uri } from 'vscode';
 import * as path from 'path'
-import * as fs from 'fs'
 const opn = require('opn');
 export const url = {
   base: 'http://www.80fight.cn:8080',

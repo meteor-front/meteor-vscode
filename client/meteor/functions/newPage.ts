@@ -997,12 +997,12 @@ ${space}},\n`;
   }
   // 生成api store内容
   public static apiStoreGenerate(apiName: string, apiPath: string) {
-let actions = `async ${apiName}Async({ commit }, data) {
+let actions = `async ${apiName}({ commit }, data) {
     const res = await ${apiName}(data)
-    commit('${apiName}Sync', res.data)
+    commit('${apiName}', res.data)
     return res.data
   }`; 
-let mutations = `${apiName}Sync(state, payload) {
+let mutations = `${apiName}(state, payload) {
   }`;
   return {
     apiName,

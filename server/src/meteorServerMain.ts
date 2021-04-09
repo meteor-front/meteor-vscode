@@ -14,7 +14,8 @@ import {
 	CompletionItemKind,
 	TextDocumentPositionParams,
 	TextDocumentSyncKind,
-	InitializeResult
+	InitializeResult,
+  _Connection
   
 } from 'vscode-languageserver/node';
 
@@ -23,16 +24,18 @@ import {
 } from 'vscode-languageserver-textdocument';
 import Utils from './utils'
 import Completion from './completion'
-// import * as babel from "babel-core"
+import MeteorServer from './meteorServer'
 
 // 创建服务器连接，通信：Node's IPC
-let connection = createConnection(ProposedFeatures.all);
+let connection: _Connection = createConnection(ProposedFeatures.all);
 let documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
 let hasConfigurationCapability: boolean = false;
 let hasWorkspaceFolderCapability: boolean = false;
 let hasDiagnosticRelatedInformationCapability: boolean = false;
 let workspaceFolders: any [] = []
 let workspaceRoot: string = ''
+let meteorConfig: any = {}
+let meteorServer: MeteorServer = new MeteorServer(connection, meteorConfig)
 
 connection.onInitialize((params: InitializeParams) => {
 	let capabilities = params.capabilities;
@@ -77,6 +80,16 @@ connection.onInitialized(() => {
 	if (hasConfigurationCapability) {
 		// Register for all configuration changes.
 		connection.client.register(DidChangeConfigurationNotification.type, undefined);
+    let result = connection.workspace.getConfiguration({
+      scopeUri: '',
+      section: 'meteor'
+    })
+    result.then((res) => {
+      // 获取初始配置
+      meteorConfig = res
+      meteorServer.completion.updateConfig(meteorConfig)
+      meteorServer.completion.getSwagger(false)
+    })
 	}
 	if (hasWorkspaceFolderCapability) {
 		connection.workspace.onDidChangeWorkspaceFolders(_event => {
@@ -87,7 +100,16 @@ connection.onInitialized(() => {
 
 // 监听配置改变
 connection.onDidChangeConfiguration(change => {
-	connection.console.log('content, config');
+  let result = connection.workspace.getConfiguration({
+    scopeUri: '',
+    section: 'meteor'
+  })
+  result.then((res) => {
+    // 获取初始配置
+    meteorConfig = res
+    meteorServer.completion.updateConfig(meteorConfig)
+    meteorServer.completion.getSwagger(true)
+  })
 });
 
 // 监听文件关闭
@@ -96,7 +118,12 @@ documents.onDidClose(e => {
 
 // 监听文件内容改变
 documents.onDidChangeContent(change => {
-	connection.console.log('content, change');
+  if (!workspaceRoot) {
+    workspaceRoot = Utils.getWorkspaceRoot(workspaceFolders, change.document.uri)
+    meteorServer.completion.updateConfig(meteorConfig)
+    meteorServer.completion.updateRoot(workspaceRoot)
+    meteorServer.completion.getSwagger(false)
+  }
 });
 
 // 监听文件改变
@@ -108,13 +135,13 @@ connection.onDidChangeWatchedFiles(_change => {
 // 提供初始完成项
 connection.onCompletion(
 	(_textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
-    connection.console.log('onCompletion')
     // connection.console.log(workspaceFolders.toString())
     // connection.console.log(_textDocumentPosition.textDocument.uri)
-    if (!workspaceRoot) {
-      workspaceRoot = Utils.getWorkspaceRoot(workspaceFolders, _textDocumentPosition.textDocument.uri)
-    }
-    return new Completion(workspaceRoot, connection).provider()
+    // if (!workspaceRoot) {
+    //   workspaceRoot = Utils.getWorkspaceRoot(workspaceFolders, _textDocumentPosition.textDocument.uri)
+    //   meteorServer.completion.updateRoot(workspaceRoot)
+    // }
+    return meteorServer.completion.provider()
 	}
 );
 

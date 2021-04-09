@@ -23,7 +23,9 @@
   "homepage": "https://github.com/meteor-front/meteor-vscode/tree/master/server",
   "dependencies": {
     "@types/babel-core": "^6.25.6",
+    "axios": "^0.21.1",
     "babel-core": "^6.26.3",
+    "camelcase": "^6.2.0",
     "eslint": "^7.21.0",
     "eslint-plugin-vue": "^7.7.0",
     "prettier": "^2.2.1",
