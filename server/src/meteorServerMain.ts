@@ -118,6 +118,7 @@ documents.onDidClose(e => {
 
 // 监听文件内容改变
 documents.onDidChangeContent(change => {
+  connection.console.log('change content')
   if (!workspaceRoot) {
     workspaceRoot = Utils.getWorkspaceRoot(workspaceFolders, change.document.uri)
     meteorServer.completion.updateConfig(meteorConfig)

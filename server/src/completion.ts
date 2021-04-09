@@ -119,13 +119,13 @@ export default class Completion {
             } else {
               insertText = `const res = await this.${apiName}({\n`
             }
-            postBody.parameters && postBody.parameters.forEach((parameter: any) => {
-              if (parameter.schema && parameter.schema.originalRef) {
-                insertText = this.traverseGetParams(insertText, parameter.schema.originalRef, '  ')
-              } else {
-                insertText += `  ${parameter.name}: '${parameter.type}',\n`
-              }
-            })
+            // postBody.parameters && postBody.parameters.forEach((parameter: any) => {
+            //   if (parameter.schema && parameter.schema.originalRef) {
+            //     insertText = this.traverseGetParams(insertText, parameter.schema.originalRef, '  ')
+            //   } else {
+            //     insertText += `  ${parameter.name}: '${parameter.type}',\n`
+            //   }
+            // })
             insertText += '})'
             let lineCount = insertText.split('\n').length
             completions.push({
@@ -138,7 +138,8 @@ export default class Completion {
                 name: apiName,
                 type: type,
                 lineCount: lineCount,
-                text: insertText
+                text: insertText,
+                swagger: this.swagger.data
               }] },
               documentation: `[${postBody.tags[0] || 'meteor'}] ${postBody.summary}`
             })

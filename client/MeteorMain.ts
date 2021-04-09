@@ -93,6 +93,7 @@ export function activate(context: vscode.ExtensionContext) {
 	});
   // meteor服务器调用的接口
   vscode.commands.registerCommand('meteor.apiGenerateFromServer', (params) => {
+    meteor.completionItemProvider.setSwagger(params.swagger)
     meteor.swagger.apiGenerateFromServer(params)
   })
   // 到达定义函数

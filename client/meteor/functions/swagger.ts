@@ -681,9 +681,54 @@ export default {
 
   // 从服务端生成api
   apiGenerateFromServer(apiParams: any) {
-    if (apiParams.lineCount > 8) {
+    if (apiParams.lineCount > 8 && apiParams.text) {
       // 参数太多，进行参数选择
-      
+      const templatePick = window.createQuickPick();
+      templatePick.title = '接口参数选择';
+      templatePick.placeholder = '选择接口参数';
+      class TemplateButton implements QuickInputButton {
+        constructor(public iconPath: { light: Uri; dark: Uri; }, public tooltip: string) { }
+      }
+      templatePick.buttons = [new TemplateButton({
+        dark: Uri.file(this.context.asAbsolutePath('asset/dark/all.svg')),
+        light: Uri.file(this.context.asAbsolutePath('asset/dark/all.svg')),
+      }, '选择全部参数'), new TemplateButton({
+        dark: Uri.file(this.context.asAbsolutePath('asset/dark/ok.svg')),
+        light: Uri.file(this.context.asAbsolutePath('asset/light/ok.svg')),
+      }, '确定')];
+      let textList = apiParams.text.split('\n')
+      let items: QuickPickItem[] = [];
+      for (let i = 0; i < textList.length; i++) {
+        const text = textList[i];
+        let textMatch = text.match(/\s\s(\w*):\s*'(\w*)'.*/i)
+        if (textMatch) {
+          items.push({
+            label: '',
+            detail: ''
+          })
+        }
+      }
+      templatePick.items = items;
+      templatePick.onDidChangeSelection(selection => {
+        templatePick.hide();
+        // 打开工程才能继续
+        if (workspace.workspaceFolders && selection[0] && selection[0].label) {
+          this.generateSingleApi(selection[0].label)
+        }
+      });
+      templatePick.onDidTriggerButton(item => {
+        switch (item.tooltip) {
+          case '替换Swagger地址':
+            break;
+          case '生成全部接口':
+            break;
+        
+          default:
+            break;
+        }
+      }),
+      templatePick.onDidHide(() => templatePick.dispose());
+      templatePick.show();
     }
     // switch (apiParams.type) {
     //   case 'api':

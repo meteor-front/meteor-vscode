@@ -8,6 +8,7 @@ import { ATTRS } from './attributes/index';
 const pretty = require('pretty');
 import { setTabSpace, getWorkspaceRoot, getRelativePath } from '../meteor/utils/util';
 import Traverse from './utils/traverse';
+const camelCase = require('camelcase');
 
 export interface TagObject {
   text: string,
@@ -82,6 +83,109 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
   private vueFiles: any = []
   private tabSpace: string = ''
   private traverse: Traverse
+  // 参数提示相关参数
+  public swagger: any = null
+  public apis: Map<string, Array<any>> = new Map()
+
+  traverseGetParams(ref: string) {
+    let ret: any = {}
+    if (this.swagger.definitions && this.swagger.definitions[ref]) {
+      let propertes = this.swagger.definitions[ref].properties
+      for (const propName in propertes) {
+        const prop = propertes[propName];
+        switch (prop.type) {
+          case 'array':
+            if (prop.items && prop.items.originalRef) {
+              ret[propName] = {
+                type: prop.type,
+                description: `请求参数：${prop.description || ''}`,
+                value: [this.traverseGetParams(prop.items.originalRef)]
+              }
+            } else {
+              ret[propName] = {
+                type: prop.type,
+                description: `请求参数：${prop.description || ''}`,
+                value: []
+              }
+            }
+            break;
+          case 'object':
+              if (prop.items && prop.items.originalRef) {
+                ret[propName] = {
+                  type: prop.type,
+                  description: `请求参数：${prop.description || ''}`,
+                  value: this.traverseGetParams(prop.items.originalRef)
+                }
+              }
+              break;
+          default:
+            ret[propName] = {
+              value: prop.type,
+              type: prop.type,
+              description: `请求参数：${prop.description || ''}`
+            }
+            break;
+        }
+      }
+    }
+    return ret
+  }
+  
+  setSwagger(swagger: any) {
+    this.swagger = swagger
+    let docs: any = {};
+    this.swagger.tags.forEach((tag: any) => {
+      let name = tag.description.replace(/\s/gi, '').replace(/Controller$/gi, '');
+      name = name[0].toLowerCase() + name.substr(1, name.length);
+      docs[tag.name] = {};
+      docs[tag.name].name = name;
+      docs[tag.name].url = name + '.js';
+    })
+    for (const apiUrl in this.swagger.paths) {
+      const post = this.swagger.paths[apiUrl];
+      for (const postWay in post) {
+        const postBody = post[postWay];
+        // 拼装apiUrl
+        let apiUrlArr = apiUrl.split('/');
+        let apiUrlLen = apiUrlArr.length;
+        if (apiUrlLen > 2) {
+          let last = apiUrlArr[apiUrlLen - 1];
+          let prev = apiUrlArr[apiUrlLen - 2];
+          if (/^{.*}$/gi.test(prev)) {
+            prev = prev.replace(/^{(.*)}$/, '$1');
+            prev = 'by' + prev[0].toUpperCase() + prev.substr(1, prev.length);
+          }
+          if (/^{.*}$/gi.test(last)) {
+            last = last.replace(/^{(.*)}$/, '$1');
+            last = 'by' + last[0].toUpperCase() + last.substr(1, last.length);
+          }
+          apiUrlArr = [prev, last];
+          if (last.length >= 15) {
+            // 如果api名称超过15位，则默认只取最后一个字段
+            apiUrlArr = [last];
+          }
+        }
+        if (postWay !== 'post') {
+          if (!(apiUrlArr[0] && apiUrlArr[0].toLowerCase().includes(postWay))) {
+            apiUrlArr.unshift(postWay);
+          }
+        }
+        let apiParams: any = {}
+        postBody.parameters && postBody.parameters.forEach((parameter: any) => {
+          if (parameter.schema && parameter.schema.originalRef) {
+            apiParams = this.traverseGetParams(parameter.schema.originalRef)
+          } else {
+            apiParams[parameter.name] = {
+              value: parameter.type,
+              type: parameter.type,
+              description: `请求参数：${parameter.description || ''}`
+            }
+          }
+        })
+        this.apis.set(camelCase(apiUrlArr), apiParams)
+      }
+    }
+  }
 
   public constructor(config: WorkspaceConfiguration) {
     this.config = config
@@ -722,6 +826,93 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
     return []
   }
 
+  // api请求接口参数判断
+  isApiParams() {
+    let currentLine = this._position.line - 1
+    let params = []
+    while (currentLine > 0) {
+      let text = this._document.lineAt(currentLine).text
+      if (/\s*\w*\s*:\s*\w*\s*/gi.test(text) || /^\s*[}\],]*\s*$/gi.test(text)) {
+        let paramsNames = text.match(/\s*(\w*)\s*:\s*\w*\s*/i)
+        if (paramsNames) {
+          params.push(paramsNames[1])
+        }
+      } else {
+        if (/\s*.*await\s*(\w*\.)?\w*\s*\(\{.*/gi.test(text)) {
+          // 是api函数
+          let textMatch = text.match(/\s*.*await\s+(?:\w*\.)?(\w*)\s*\(\{.*/i)
+          if (textMatch) {
+            return {
+              params: params,
+              name: textMatch[1]
+            }
+          } else {
+            return ''
+          }
+        } else {
+          return ''
+        }
+      }
+      --currentLine
+    }
+    return ''
+  }
+
+  // api参数提示
+  apiParamsCompletionItem(api: any) {
+    let completionItems: CompletionItem[] = []
+    let paramsObj: any = this.apis.get(api.name)
+    for (const key in paramsObj) {
+      const params = paramsObj[key];
+      if (!api.params.includes(key)) {
+        if (params.type === 'array') {
+          let insertText = `${key}: [{\n`
+          if (params.value.length > 0) {
+            for (const itemKey in params.value[0]) {
+              const item = params.value[0][itemKey];
+              if (typeof item === 'string') {
+                insertText += `${this.tabSpace}${itemKey}: '${item}',\n`
+              }
+            }
+            insertText += `}],\n`
+          }
+          completionItems.push({
+            label: key,
+            insertText: new SnippetString(insertText),
+            documentation: params.description,
+            kind: CompletionItemKind.Field,
+            sortText: '000' + completionItems.length
+          })
+        } else if (params.type === 'object') {
+          let insertText = `${key}: {\n`
+          for (const itemKey in params.value) {
+            const item = params.value[itemKey];
+            if (typeof item === 'string') {
+              insertText += `${this.tabSpace}${itemKey}: '${item}',\n`
+            }
+          }
+          insertText += `},\n`
+          completionItems.push({
+            label: key,
+            insertText: new SnippetString(insertText),
+            documentation: params.description,
+            kind: CompletionItemKind.Field,
+            sortText: '000' + completionItems.length
+          })
+        } else {
+          completionItems.push({
+            label: key,
+            insertText: new SnippetString(`${key}: '\${1:${params.type}}',\n`),
+            documentation: params.description,
+            kind: CompletionItemKind.Field,
+            sortText: '000' + completionItems.length
+          })
+        }
+      }
+    }
+    return completionItems
+  }
+
   // 提供完成项(提示入口)
   provideCompletionItems(document: TextDocument, position: Position, token: CancellationToken): ProviderResult<CompletionItem[] | CompletionList> {
     this._document = document;
@@ -729,6 +920,12 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
     this.workspaceRoot = getWorkspaceRoot(this._document.uri.path)
     if (this.tabSpace.length === 0) {
       this.tabSpace = setTabSpace()
+    }
+
+    // 函数参数判断
+    let api = this.isApiParams()
+    if (api) {
+      return this.apiParamsCompletionItem(api)
     }
     
     // import导入提示增强
