@@ -1,32 +1,30 @@
-import { WorkspaceConfiguration, window, ConfigurationTarget, ExtensionContext, workspace,  Uri, Position, commands, QuickInputButton, QuickPickItem } from 'vscode'
+import { WorkspaceConfiguration, window, ConfigurationTarget, ExtensionContext, workspace,  Uri, Position, commands, QuickInputButton, QuickPickItem, TextEditorEdit } from 'vscode'
 import { AxiosInstance } from 'axios';
 import { getWorkspaceRoot, winRootPathHandle, getRelativePath } from '../utils/util'
 import * as path from 'path';
 import * as fs from 'fs'
 const camelCase = require('camelcase');
 import NewPage from './newPage'
+import Meteor from '../meteor'
 
 export default class SwaggerFactory {
-  private config: WorkspaceConfiguration
-  private fetch: AxiosInstance
   private workspaceRoot: string
-  private context: ExtensionContext
   private projectName: string
   private apis: string [] = []
   private names: string [] = []
   private docs: any = {}
   private paths: any
+  public swaggerData: any = null
+  public meteor: Meteor
 
-  constructor(config:WorkspaceConfiguration, fetch: AxiosInstance, context: ExtensionContext) {
-    this.config = config
-    this.fetch = fetch
-    this.context = context
+  constructor(meteor: Meteor) {
+    this.meteor = meteor
     this.workspaceRoot = getWorkspaceRoot('')
     this.projectName = this.workspaceRoot.replace(/.*\//gi, '')
   }
   // swagger生成api
-  async generate() {
-    let swaggerUrlConfig: any = this.config.get('swaggerUrl') || [];
+  async generate(justData: boolean) {
+    let swaggerUrlConfig: any = this.meteor.config.get('swaggerUrl') || [];
     let url = swaggerUrlConfig[this.projectName] || ''
     // 新增操作
     if (!url) {
@@ -35,7 +33,7 @@ export default class SwaggerFactory {
       });
       if (url) {
         swaggerUrlConfig[this.projectName] = url
-        this.config.update('swaggerUrl', swaggerUrlConfig, ConfigurationTarget.Global);
+        this.meteor.config.update('swaggerUrl', swaggerUrlConfig, ConfigurationTarget.Global);
       } else {
         return
       }
@@ -45,13 +43,13 @@ export default class SwaggerFactory {
       // html地址，进行转换
       url = url.replace(/(.*)swagger-ui.html.*/gi, '$1swagger-resources').replace(/(.*)doc.html.*/gi, '$1swagger-resources')
       console.log('replace: ' + url)
-      let res = await this.fetch.get(url);
+      let res = await this.meteor.fetch.get(url);
       if (res && res.data) {
         url = url.replace('/swagger-resources', res.data[0].url || res.data[0].location);
       }
     }
     // 获取swagger api内容
-    let res = await this.fetch.get(url);
+    let res = await this.meteor.fetch.get(url);
     if (res && res.data) {
       this.paths = res.data.paths
       let docs: any = {};
@@ -59,7 +57,7 @@ export default class SwaggerFactory {
         let name = tag.description.replace(/\s/gi, '').replace(/Controller$/gi, '');
         name = name[0].toLowerCase() + name.substr(1, name.length);
         docs[tag.name] = {};
-        let apiPath = path.join(this.workspaceRoot, this.config.get('rootPathApi') || '', name + '.js');
+        let apiPath = path.join(this.workspaceRoot, this.meteor.config.get('rootPathApi') || '', name + '.js');
         apiPath = winRootPathHandle(apiPath);
         docs[tag.name].name = name;
         docs[tag.name].url = apiPath;
@@ -83,6 +81,11 @@ export default class SwaggerFactory {
       }
       this.apis = apis
       this.names = names
+      this.swaggerData = res
+
+      if (justData) {
+        return
+      }
 
       const templatePick = window.createQuickPick();
       templatePick.title = 'Swagger接口生成';
@@ -91,11 +94,11 @@ export default class SwaggerFactory {
         constructor(public iconPath: { light: Uri; dark: Uri; }, public tooltip: string) { }
       }
       templatePick.buttons = [new TemplateButton({
-        dark: Uri.file(this.context.asAbsolutePath('asset/dark/replace.svg')),
-        light: Uri.file(this.context.asAbsolutePath('asset/light/replace.svg')),
+        dark: Uri.file(this.meteor.context.asAbsolutePath('asset/dark/replace.svg')),
+        light: Uri.file(this.meteor.context.asAbsolutePath('asset/light/replace.svg')),
       }, '替换Swagger地址'), new TemplateButton({
-        dark: Uri.file(this.context.asAbsolutePath('asset/dark/all.svg')),
-        light: Uri.file(this.context.asAbsolutePath('asset/dark/all.svg')),
+        dark: Uri.file(this.meteor.context.asAbsolutePath('asset/dark/all.svg')),
+        light: Uri.file(this.meteor.context.asAbsolutePath('asset/dark/all.svg')),
       }, '生成全部接口')];
       templatePick.items = items;
       templatePick.onDidChangeSelection(selection => {
@@ -129,7 +132,7 @@ export default class SwaggerFactory {
     try {
       let index = this.apis.indexOf(singleApi);
       singleApiPathName = this.docs[this.names[index]].name;
-      singleApiPath = path.join(this.workspaceRoot, this.config.get('rootPathApi') || '', singleApiPathName + '.js');
+      singleApiPath = path.join(this.workspaceRoot, this.meteor.config.get('rootPathApi') || '', singleApiPathName + '.js');
       if (index !== -1) {
         singleApiPath = winRootPathHandle(singleApiPath);
         fs.statSync(singleApiPath);
@@ -221,14 +224,14 @@ let func = `export function ${apiName}(${paramName}) {
                 }
                 let apiStore = NewPage.apiStoreGenerate(apiName, singleApiPathName);
                 let hasModules = true;
-                let modulesPath = path.join(this.workspaceRoot, this.config.get('rootPathStore') || '', 'modules');
+                let modulesPath = path.join(this.workspaceRoot, this.meteor.config.get('rootPathStore') || '', 'modules');
                 try {
                   fs.statSync(modulesPath);
                 } catch (error) {
                   hasModules = false;
                 }
                 let apiStoreJs = '';
-                let rootPathStore: string = this.config.get('rootPathStore') || '';
+                let rootPathStore: string = this.meteor.config.get('rootPathStore') || '';
                 if (hasModules) {
                   apiStoreJs = path.join(this.workspaceRoot, rootPathStore, 'modules', singleApiPathName);
                 } else {
@@ -242,7 +245,7 @@ let func = `export function ${apiName}(${paramName}) {
                     apiStore
                   });
                 } catch (error) {
-                  let pathTemplate = path.join(this.context.extensionUri.path, NewPage.templateRoot, 'api.js');
+                  let pathTemplate = path.join(this.meteor.context.extensionUri.path, NewPage.templateRoot, 'api.js');
                   pathTemplate = winRootPathHandle(pathTemplate);
                   NewPage.fileGenerate(apiStoreJs, pathTemplate, 'apiEachStore', {
                     apiStore
@@ -310,11 +313,11 @@ return res.data
       storeStr = storeStr.replace(/#import#/gi, importStr);
       storeStr = storeStr.replace(/#mutations#/gi, mutationStr);
       storeStr = storeStr.replace(/#actions#/gi, actionStr);
-      let rootPathStore: string = this.config.get('rootPathStore') || '';
+      let rootPathStore: string = this.meteor.config.get('rootPathStore') || '';
       if (rootPathStore) {
         // 判断modules目录是否存在
         let hasModules = true;
-        let modulesPath = path.join(this.workspaceRoot, this.config.get('rootPathStore') || '', 'modules');
+        let modulesPath = path.join(this.workspaceRoot, this.meteor.config.get('rootPathStore') || '', 'modules');
         try {
           fs.statSync(modulesPath);
         } catch (error) {
@@ -349,7 +352,7 @@ return res.data
           window.showInformationMessage("请先打开工程");
           return;
         }
-        let apiPath = path.join(this.workspaceRoot, this.config.get('rootPathApi') || '', name + '.js');
+        let apiPath = path.join(this.workspaceRoot, this.meteor.config.get('rootPathApi') || '', name + '.js');
         apiPath = winRootPathHandle(apiPath);
         docs[tag.name].name = name;
         docs[tag.name].url = apiPath;
@@ -359,7 +362,7 @@ return res.data
           }
         } catch (error) {
         }
-        let rootPathStore: string = this.config.get('rootPathStore') || '';
+        let rootPathStore: string = this.meteor.config.get('rootPathStore') || '';
         if (rootPathStore) {
           // 判断modules目录是否存在
           let hasModules = true;
@@ -402,13 +405,13 @@ return res.data
     if (url) {
       if (url.endsWith('swagger-ui.html') || url.endsWith('swagger-ui.html#/')) {
         // html地址，进行转换
-        let res = await this.fetch.get(url.replace(/(.*)swagger-ui.html.*/gi, '$1swagger-resources'));
+        let res = await this.meteor.fetch.get(url.replace(/(.*)swagger-ui.html.*/gi, '$1swagger-resources'));
         if (res && res.data) {
           url = url.replace('/swagger-ui.html', res.data[0].url || res.data[0].location);
         }
       }
       // 获取swagger api内容
-      let res = await this.fetch.get(url);
+      let res = await this.meteor.fetch.get(url);
       if (res && res.data) {
         let docs: any = {};
         res.data.tags.forEach((tag: any) => {
@@ -420,7 +423,7 @@ return res.data
             window.showInformationMessage("请先打开工程");
             return;
           }
-          let apiPath = path.join(this.workspaceRoot, this.config.get('rootPathApi') || '', name + '.js');
+          let apiPath = path.join(this.workspaceRoot, this.meteor.config.get('rootPathApi') || '', name + '.js');
           apiPath = winRootPathHandle(apiPath);
           docs[tag.name].name = name;
           docs[tag.name].url = apiPath;
@@ -430,7 +433,7 @@ return res.data
             }
           } catch (error) {
           }
-          let rootPathStore: string = this.config.get('rootPathStore') || '';
+          let rootPathStore: string = this.meteor.config.get('rootPathStore') || '';
           if (rootPathStore) {
             // 判断modules目录是否存在
             let hasModules = true;
@@ -480,7 +483,7 @@ return res.data
             try {
               let index = apis.indexOf(singleApi);
               singleApiPathName = docs[names[index]].name;
-              singleApiPath = path.join(this.workspaceRoot, this.config.get('rootPathApi') || '', singleApiPathName + '.js');
+              singleApiPath = path.join(this.workspaceRoot, this.meteor.config.get('rootPathApi') || '', singleApiPathName + '.js');
               if (index !== -1) {
                 singleApiPath = winRootPathHandle(singleApiPath);
                 fs.statSync(singleApiPath);
@@ -563,14 +566,14 @@ let func = `export function ${apiName}(${paramName}) {
                     }
                     let apiStore = NewPage.apiStoreGenerate(apiName, singleApiPathName);
                     let hasModules = true;
-                    let modulesPath = path.join(this.workspaceRoot, this.config.get('rootPathStore') || '', 'modules');
+                    let modulesPath = path.join(this.workspaceRoot, this.meteor.config.get('rootPathStore') || '', 'modules');
                     try {
                       fs.statSync(modulesPath);
                     } catch (error) {
                       hasModules = false;
                     }
                     let apiStoreJs = '';
-                    let rootPathStore: string = this.config.get('rootPathStore') || '';
+                    let rootPathStore: string = this.meteor.config.get('rootPathStore') || '';
                     if (hasModules) {
                       apiStoreJs = path.join(this.workspaceRoot, rootPathStore, 'modules', singleApiPathName);
                     } else {
@@ -584,7 +587,7 @@ let func = `export function ${apiName}(${paramName}) {
                         apiStore
                       });
                     } catch (error) {
-                      let pathTemplate = path.join(this.context.extensionUri.path, NewPage.templateRoot, 'api.js');
+                      let pathTemplate = path.join(this.meteor.context.extensionUri.path, NewPage.templateRoot, 'api.js');
                       pathTemplate = winRootPathHandle(pathTemplate);
                       NewPage.fileGenerate(apiStoreJs, pathTemplate, 'apiEachStore', {
                         apiStore
@@ -649,11 +652,11 @@ export default {
           storeStr = storeStr.replace(/#import#/gi, importStr);
           storeStr = storeStr.replace(/#mutations#/gi, mutationStr);
           storeStr = storeStr.replace(/#actions#/gi, actionStr);
-          let rootPathStore: string = this.config.get('rootPathStore') || '';
+          let rootPathStore: string = this.meteor.config.get('rootPathStore') || '';
           if (rootPathStore) {
             // 判断modules目录是否存在
             let hasModules = true;
-            let modulesPath = path.join(this.workspaceRoot, this.config.get('rootPathStore') || '', 'modules');
+            let modulesPath = path.join(this.workspaceRoot, this.meteor.config.get('rootPathStore') || '', 'modules');
             try {
               fs.statSync(modulesPath);
             } catch (error) {
@@ -680,80 +683,39 @@ export default {
   }
 
   // 从服务端生成api
-  apiGenerateFromServer(apiParams: any) {
-    if (apiParams.lineCount > 8 && apiParams.text) {
-      // 参数太多，进行参数选择
-      const templatePick = window.createQuickPick();
-      templatePick.title = '接口参数选择';
-      templatePick.placeholder = '选择接口参数';
-      class TemplateButton implements QuickInputButton {
-        constructor(public iconPath: { light: Uri; dark: Uri; }, public tooltip: string) { }
+  apiGenerateFileExtra(apiParams: any) {
+    if (apiParams.text) {
+      switch (apiParams.type) {
+        case 'api':
+          this.apiGenerateFileExtraInApi(apiParams)
+          break;
+        case 'store':
+            this.apiGenerateFileExtraInStore(apiParams)
+            break;
+      
+        default:
+          break;
       }
-      templatePick.buttons = [new TemplateButton({
-        dark: Uri.file(this.context.asAbsolutePath('asset/dark/all.svg')),
-        light: Uri.file(this.context.asAbsolutePath('asset/dark/all.svg')),
-      }, '选择全部参数'), new TemplateButton({
-        dark: Uri.file(this.context.asAbsolutePath('asset/dark/ok.svg')),
-        light: Uri.file(this.context.asAbsolutePath('asset/light/ok.svg')),
-      }, '确定')];
-      let textList = apiParams.text.split('\n')
-      let items: QuickPickItem[] = [];
-      for (let i = 0; i < textList.length; i++) {
-        const text = textList[i];
-        let textMatch = text.match(/\s\s(\w*):\s*'(\w*)'.*/i)
-        if (textMatch) {
-          items.push({
-            label: '',
-            detail: ''
-          })
-        }
-      }
-      templatePick.items = items;
-      templatePick.onDidChangeSelection(selection => {
-        templatePick.hide();
-        // 打开工程才能继续
-        if (workspace.workspaceFolders && selection[0] && selection[0].label) {
-          this.generateSingleApi(selection[0].label)
-        }
-      });
-      templatePick.onDidTriggerButton(item => {
-        switch (item.tooltip) {
-          case '替换Swagger地址':
-            break;
-          case '生成全部接口':
-            break;
-        
-          default:
-            break;
-        }
-      }),
-      templatePick.onDidHide(() => templatePick.dispose());
-      templatePick.show();
     }
-    // switch (apiParams.type) {
-    //   case 'api':
-    //     this.apiGenerateFromServerInApi(apiParams)
-    //     break;
-    //   case 'store':
-    //       this.apiGenerateFromServerInStore(apiParams)
-    //       break;
-    
-    //   default:
-    //     break;
-    // }
   }
 
   // 直接调用api里面的接口
-  apiGenerateFromServerInApi(apiParams: any) {
+  apiGenerateFileExtraInApi(apiParams: any) {
     let editor = window.activeTextEditor;
     if (!editor) { return; }
-    let relativePath = getRelativePath(editor.document.uri.path, apiParams.path)
+    let relativePath = getRelativePath(editor.document.uri.path, path.join(this.workspaceRoot, this.meteor.config.get('rootPathApi') || '', apiParams.path))
     let currentLine = 0
     let count = editor.document.lineCount
     let endReg = /\s*export\s*default\s*{\s*/gi
     while (currentLine < count) {
       let text = editor.document.lineAt(currentLine).text
       if (endReg.test(text)) {
+        // 上一行为空判断
+        text = editor.document.lineAt(currentLine - 1).text
+        while (!text.trim() && currentLine > 0) {
+          --currentLine
+          text = editor.document.lineAt(currentLine - 1).text
+        }
         break
       }
       // 存在import，且导入名称不存在
@@ -769,18 +731,39 @@ export default {
     }
     // 说明没有import过
     if (currentLine < count) {
+      // 判断是否存在async
+      let currentActiveLine = window.activeTextEditor?.selection.active.line
+      let AddAsyncPosition: Position = new Position(0, 0)
+      if (currentActiveLine && currentActiveLine > 0) {
+        let text = ''
+        while(currentActiveLine > 0) {
+          text = editor.document.lineAt(currentActiveLine - 1).text
+          console.log(text)
+          if (/^\s*async\s*\w*\(\w*\)\s*{\s*$/gi.test(text)) {
+            break
+          } else if (/^\s*\w*\(\w*\)\s*{\s*$/gi.test(text)) {
+            AddAsyncPosition = new Position(currentActiveLine - 1, text.indexOf(text.trim()))
+            break
+          } else if (/^\s*methods\s*:\s*{\s*$/gi.test(text)) {
+            break
+          }
+          --currentActiveLine
+        }
+      }
       editor.edit((editBuilder: any) => {
+        if (AddAsyncPosition.line > 0) {
+          editBuilder.insert(AddAsyncPosition, 'async ');
+        }
         editBuilder.insert(new Position(currentLine, 0), `import { ${apiParams.name} } from '${relativePath}'\n`);
       })
     }
   }
 
   // 通过store调用接口
-  apiGenerateFromServerInStore(apiParams: any) {
+  apiGenerateFileExtraInStore(apiParams: any) {
     let editor = window.activeTextEditor;
     if (!editor) { return; }
-    let relativePath = getRelativePath(editor.document.uri.path, apiParams.path)
-    let fileName = relativePath.replace(/.*\/(\w*).\w*/gi, '$1')
+    let fileName = apiParams.path.replace(/.*\/(\w*).\w*/gi, '$1')
     let currentLine = 0
     let count = editor.document.lineCount
     let endReg = /\s*export\s*default\s*{\s*/gi
@@ -789,6 +772,12 @@ export default {
     while (currentLine < count) {
       let text = editor.document.lineAt(currentLine).text
       if (endReg.test(text)) {
+        // 上一行为空判断
+        text = editor.document.lineAt(currentLine - 1).text
+        while (!text.trim() && currentLine > 0) {
+          --currentLine
+          text = editor.document.lineAt(currentLine - 1).text
+        }
         break
       }
       // 存在import，且导入名称不存在
@@ -837,15 +826,58 @@ export default {
       currentLine++
     }
     if (currentLine < count && !isImport) {
-      insertList.push([new Position(methodsLine + 1, 0), `    ...mapActions('${fileName}', ['${apiParams.name}']),\n`])
+      insertList.push([new Position(methodsLine + 1, 0), `    ...mapActions('${fileName.replace(/(.*)\..*/, '$1')}', ['${apiParams.name}']),\n`])
     }
     if (insertList.length > 0) {
-      editor.edit((editBuilder: any) => {
+      // 判断是否存在async
+      let currentActiveLine = window.activeTextEditor?.selection.active.line
+      let AddAsyncPosition: Position = new Position(0, 0)
+      if (currentActiveLine && currentActiveLine > 0) {
+        let text = ''
+        while(currentActiveLine > 0) {
+          text = editor.document.lineAt(currentActiveLine - 1).text
+          console.log(text)
+          if (/^\s*async\s*\w*\(\w*\)\s*{\s*$/gi.test(text)) {
+            break
+          } else if (/^\s*\w*\(\w*\)\s*{\s*$/gi.test(text)) {
+            AddAsyncPosition = new Position(currentActiveLine - 1, text.indexOf(text.trim()))
+            break
+          } else if (/^\s*methods\s*:\s*{\s*$/gi.test(text)) {
+            break
+          }
+          --currentActiveLine
+        }
+      }
+      editor.edit((editBuilder: TextEditorEdit) => {
+        if (AddAsyncPosition.line > 0) {
+          editBuilder.insert(AddAsyncPosition, 'async ');
+        }
         for (let i = 0; i < insertList.length; i++) {
           const insertText = insertList[i]
           editBuilder.insert(insertText[0], insertText[1]);
         }
       })
     }
+  }
+
+  // 获取swagger返回信息
+  async getSwagger(isForce: boolean) {
+    let url = this.getUrl()
+    if (url && (!this.swaggerData || isForce)) {
+      // 生成接口选项列表
+      if (url.includes('swagger-ui.html') || url.includes('doc.html')) {
+        // html地址，进行转换
+        url = url.replace(/(.*)swagger-ui.html.*/gi, '$1swagger-resources').replace(/(.*)doc.html.*/gi, '$1swagger-resources')
+        let res = await this.meteor.fetch.get(url);
+        if (res && res.data) {
+          url = url.replace('/swagger-resources', res.data[0].url || res.data[0].location);
+        }
+      }
+      // 获取swagger api内容
+      this.swaggerData = await this.meteor.fetch.get(url);
+    }
+  }
+  getUrl() {
+    return this.meteor.config.swaggerUrl && this.meteor.config.swaggerUrl[this.projectName] || ''
   }
 }

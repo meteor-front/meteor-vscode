@@ -1,6 +1,7 @@
 import { ExtensionContext, workspace, WorkspaceConfiguration, window, ProgressLocation, Position, Selection, Range, TextEditorRevealType } from 'vscode'
 import axios, { AxiosInstance } from 'axios';
 import MeteorCompletionItemProvider from './completionItemProvider';
+import SwaggerCompletionItemProvider from './swaggerCompletionItemProvider';
 import Block from './block';
 import BackSpace from './functions/backSpace'
 import { url, winRootPathHandle } from './utils/util'
@@ -12,9 +13,10 @@ export default class Meteor {
   // vscode上下文
   public context: ExtensionContext
   // 配置信息
-  private config: WorkspaceConfiguration
+  public config: WorkspaceConfiguration
   // 完成项提供Provider
   public completionItemProvider: MeteorCompletionItemProvider
+  public swaggerCompletionItemProvider: SwaggerCompletionItemProvider
   public block: Block
   public backSpace: BackSpace
   public fetch: AxiosInstance
@@ -30,10 +32,11 @@ export default class Meteor {
         token: '20'
       }
     })
-    this.completionItemProvider = new MeteorCompletionItemProvider(this.config)
+    this.swagger = new Swagger(this)
+    this.completionItemProvider = new MeteorCompletionItemProvider(this.config, this)
+    this.swaggerCompletionItemProvider = new SwaggerCompletionItemProvider(this)
     this.block = new Block()
     this.backSpace = new BackSpace()
-    this.swagger = new Swagger(this.config, this.fetch, this.context)
     this.newPage = new NewPage()
   }
 

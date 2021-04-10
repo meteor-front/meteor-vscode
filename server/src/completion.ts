@@ -1,19 +1,17 @@
 import path from 'path';
 import fs from 'fs'
-import { CompletionItemKind, _Connection } from 'vscode-languageserver/node'
+import { CompletionItemKind, _Connection,  } from 'vscode-languageserver/node'
 import axios, { AxiosInstance } from 'axios'
 const camelCase = require('camelcase');
 import Utils from './utils'
 export default class Completion {
   private root: string
   private traversePath: string
-  private connection: _Connection
   private fetch: AxiosInstance
   private meteorConfig: any
   private docs: any
   private swagger: any = null
   constructor(connection: any, meteorConfig: any) {
-    this.connection = connection
     this.meteorConfig = meteorConfig
     this.fetch = axios.create({
       baseURL: 'http://www.80fight.cn:8080',
@@ -133,7 +131,7 @@ export default class Completion {
               insertText: lineCount < 8 ? insertText : '',
               sortText: '555' + completions.length,
               kind: CompletionItemKind.Folder,
-              command: { command: 'meteor.apiGenerateFromServer', arguments: [{
+              command: { command: 'meteor.apiGenerateFileExtra', arguments: [{
                 path: this.docs[postBody.tags[0]].url,
                 name: apiName,
                 type: type,
@@ -191,7 +189,7 @@ export default class Completion {
                   insertText: insertText,
                   sortText: '555' + completions.length,
                   kind: CompletionItemKind.Folder,
-                  command: { command: 'meteor.apiGenerateFromServer', title: 'meteorApi', arguments: [{
+                  command: { command: 'meteor.apiGenerateFileExtra', title: 'meteorApi', arguments: [{
                     path: pathName,
                     name: func[1],
                     args: argumentList,

@@ -87,8 +87,8 @@ connection.onInitialized(() => {
     result.then((res) => {
       // 获取初始配置
       meteorConfig = res
-      meteorServer.completion.updateConfig(meteorConfig)
-      meteorServer.completion.getSwagger(false)
+      // meteorServer.completion.updateConfig(meteorConfig)
+      // meteorServer.completion.getSwagger(false)
     })
 	}
 	if (hasWorkspaceFolderCapability) {
@@ -107,8 +107,8 @@ connection.onDidChangeConfiguration(change => {
   result.then((res) => {
     // 获取初始配置
     meteorConfig = res
-    meteorServer.completion.updateConfig(meteorConfig)
-    meteorServer.completion.getSwagger(true)
+    // meteorServer.completion.updateConfig(meteorConfig)
+    // meteorServer.completion.getSwagger(true)
   })
 });
 
@@ -121,9 +121,9 @@ documents.onDidChangeContent(change => {
   connection.console.log('change content')
   if (!workspaceRoot) {
     workspaceRoot = Utils.getWorkspaceRoot(workspaceFolders, change.document.uri)
-    meteorServer.completion.updateConfig(meteorConfig)
-    meteorServer.completion.updateRoot(workspaceRoot)
-    meteorServer.completion.getSwagger(false)
+    // meteorServer.completion.updateConfig(meteorConfig)
+    // meteorServer.completion.updateRoot(workspaceRoot)
+    // meteorServer.completion.getSwagger(false)
   }
 });
 
@@ -142,7 +142,8 @@ connection.onCompletion(
     //   workspaceRoot = Utils.getWorkspaceRoot(workspaceFolders, _textDocumentPosition.textDocument.uri)
     //   meteorServer.completion.updateRoot(workspaceRoot)
     // }
-    return meteorServer.completion.provider()
+    // return meteorServer.completion.provider()
+    return []
 	}
 );
 

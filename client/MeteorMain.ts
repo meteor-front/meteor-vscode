@@ -29,6 +29,7 @@ export function activate(context: vscode.ExtensionContext) {
   
   // 为标签、属性提示提供自动完成功能, 关闭标签功能
   vscode.languages.registerCompletionItemProvider(['vue', 'javascript', 'html', 'wxml'], meteor.completionItemProvider, '' ,':', '<', '"', "'", '/', '@', '(', '>', '{');
+  vscode.languages.registerCompletionItemProvider(['vue', 'javascript', 'html', 'wxml'], meteor.swaggerCompletionItemProvider, '');
   // 函数补全函数
   vscode.commands.registerCommand('meteor.functionCompletion', () => {
     let editor = vscode.window.activeTextEditor;
@@ -55,7 +56,7 @@ export function activate(context: vscode.ExtensionContext) {
 	});
   // swagger生成api
 	vscode.commands.registerCommand('meteor.swagger', async () => {
-		meteor.swagger.generate()
+		meteor.swagger.generate(false)
 	});
   // 页面生成
 	vscode.commands.registerCommand('meteor.newPage', (uri) => {
@@ -92,9 +93,10 @@ export function activate(context: vscode.ExtensionContext) {
 		meteor.newPage.api(context, uri);
 	});
   // meteor服务器调用的接口
-  vscode.commands.registerCommand('meteor.apiGenerateFromServer', (params) => {
+  vscode.commands.registerCommand('meteor.apiGenerateFileExtra', (params) => {
     meteor.completionItemProvider.setSwagger(params.swagger)
-    meteor.swagger.apiGenerateFromServer(params)
+    meteor.swagger.apiGenerateFileExtra(params)
+    meteor.swagger.
   })
   // 到达定义函数
   vscode.languages.registerDefinitionProvider(['vue', 'javascript', 'html'], new MeteorDefinitionProvider());

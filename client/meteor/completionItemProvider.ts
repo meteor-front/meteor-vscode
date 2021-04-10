@@ -8,6 +8,7 @@ import { ATTRS } from './attributes/index';
 const pretty = require('pretty');
 import { setTabSpace, getWorkspaceRoot, getRelativePath } from '../meteor/utils/util';
 import Traverse from './utils/traverse';
+import Meteor from './meteor'
 const camelCase = require('camelcase');
 
 export interface TagObject {
@@ -83,6 +84,7 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
   private vueFiles: any = []
   private tabSpace: string = ''
   private traverse: Traverse
+  private meteor: Meteor
   // 参数提示相关参数
   public swagger: any = null
   public apis: Map<string, Array<any>> = new Map()
@@ -187,8 +189,9 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
     }
   }
 
-  public constructor(config: WorkspaceConfiguration) {
+  public constructor(config: WorkspaceConfiguration, meteor: Meteor) {
     this.config = config
+    this.meteor = meteor
     this.traverse = new Traverse(config, getWorkspaceRoot(window.activeTextEditor?.document.uri.path || ''))
   }
 
