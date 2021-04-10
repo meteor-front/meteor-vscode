@@ -144,35 +144,14 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
       docs[tag.name].name = name;
       docs[tag.name].url = name + '.js';
     })
+    let apiNameList: string[] = []
     for (const apiUrl in this.swagger.paths) {
       const post = this.swagger.paths[apiUrl];
       for (const postWay in post) {
         const postBody = post[postWay];
-        // 拼装apiUrl
-        let apiUrlArr = apiUrl.split('/');
-        let apiUrlLen = apiUrlArr.length;
-        if (apiUrlLen > 2) {
-          let last = apiUrlArr[apiUrlLen - 1];
-          let prev = apiUrlArr[apiUrlLen - 2];
-          if (/^{.*}$/gi.test(prev)) {
-            prev = prev.replace(/^{(.*)}$/, '$1');
-            prev = 'by' + prev[0].toUpperCase() + prev.substr(1, prev.length);
-          }
-          if (/^{.*}$/gi.test(last)) {
-            last = last.replace(/^{(.*)}$/, '$1');
-            last = 'by' + last[0].toUpperCase() + last.substr(1, last.length);
-          }
-          apiUrlArr = [prev, last];
-          if (last.length >= 15) {
-            // 如果api名称超过15位，则默认只取最后一个字段
-            apiUrlArr = [last];
-          }
-        }
-        if (postWay !== 'post') {
-          if (!(apiUrlArr[0] && apiUrlArr[0].toLowerCase().includes(postWay))) {
-            apiUrlArr.unshift(postWay);
-          }
-        }
+        let ret = this.meteor.swagger.getApiName(post, postWay, apiUrl, apiNameList)
+        let apiName = ret.apiName
+        apiNameList.push(apiName)
         let apiParams: any = {}
         postBody.parameters && postBody.parameters.forEach((parameter: any) => {
           if (parameter.schema && parameter.schema.originalRef) {
@@ -185,7 +164,10 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
             }
           }
         })
-        this.apis.set(camelCase(apiUrlArr), apiParams)
+        if (apiName === 'upload') {
+          console.log(apiParams)
+        }
+        this.apis.set(apiName, apiParams)
       }
     }
   }

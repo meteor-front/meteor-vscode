@@ -37,38 +37,15 @@ export default class SwaggerCompletionItemProvider implements CompletionItemProv
           this.docs = docs
           let type = fs.existsSync(path.join(this.workspaceRoot, this.meteor.config.get('rootPathStore') || '', 'modules')) ? 'store' : 'api'
           let completions: CompletionItem[] = []
+          let apiNameList: string[] = []
           for (const apiUrl in res.data.paths) {
             const post = res.data.paths[apiUrl];
             for (const postWay in post) {
-              const postBody = post[postWay];
-              let apiName = '';
-              // 拼装apiUrl
-              let apiUrlArr = apiUrl.split('/');
-              let apiUrlLen = apiUrlArr.length;
               let insertText = ''
-              if (apiUrlLen > 2) {
-                let last = apiUrlArr[apiUrlLen - 1];
-                let prev = apiUrlArr[apiUrlLen - 2];
-                if (/^{.*}$/gi.test(prev)) {
-                  prev = prev.replace(/^{(.*)}$/, '$1');
-                  prev = 'by' + prev[0].toUpperCase() + prev.substr(1, prev.length);
-                }
-                if (/^{.*}$/gi.test(last)) {
-                  last = last.replace(/^{(.*)}$/, '$1');
-                  last = 'by' + last[0].toUpperCase() + last.substr(1, last.length);
-                }
-                apiUrlArr = [prev, last];
-                if (last.length >= 15) {
-                  // 如果api名称超过15位，则默认只取最后一个字段
-                  apiUrlArr = [last];
-                }
-              }
-              if (postWay !== 'post') {
-                if (!(apiUrlArr[0] && apiUrlArr[0].toLowerCase().includes(postWay))) {
-                  apiUrlArr.unshift(postWay);
-                }
-              }
-              apiName = camelCase(apiUrlArr);
+              let ret = this.meteor.swagger.getApiName(post, postWay, apiUrl, apiNameList)
+              let apiName = ret.apiName
+              const postBody = post[postWay];
+              apiNameList.push(apiName)
               if (type === 'api') {
                 insertText = `const res = await ${apiName}({\n`
               } else {
@@ -79,8 +56,8 @@ export default class SwaggerCompletionItemProvider implements CompletionItemProv
               completions.push({
                 label: apiName,
                 insertText: new SnippetString(insertText),
-                sortText: '555' + completions.length,
-                kind: CompletionItemKind.Folder,
+                sortText: '444' + completions.length,
+                kind: CompletionItemKind.Function,
                 command: { command: 'meteor.apiGenerateFileExtra', title: 'meteor.apiGenerateFileExtra', arguments: [{
                   path: this.docs[postBody.tags[0]].url,
                   name: apiName,

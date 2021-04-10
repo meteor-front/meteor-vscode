@@ -4,7 +4,7 @@ import MeteorCompletionItemProvider from './completionItemProvider';
 import SwaggerCompletionItemProvider from './swaggerCompletionItemProvider';
 import Block from './block';
 import BackSpace from './functions/backSpace'
-import { url, winRootPathHandle } from './utils/util'
+import { url, winRootPathHandle, setTabSpace } from './utils/util'
 import Swagger from './functions/swagger'
 import NewPage from './functions/newPage'
 import * as path from 'path'
@@ -24,6 +24,7 @@ export default class Meteor {
   public fetch: AxiosInstance
   public swagger: Swagger
   public newPage: NewPage
+  public tabSpace: string = '  '
   constructor(context: ExtensionContext) {
     this.context = context
     this.config = new Config()
@@ -34,6 +35,7 @@ export default class Meteor {
         token: '20'
       }
     })
+    this.tabSpace = setTabSpace()
     this.swagger = new Swagger(this)
     this.completionItemProvider = new MeteorCompletionItemProvider(this.config, this)
     this.swaggerCompletionItemProvider = new SwaggerCompletionItemProvider(this)
