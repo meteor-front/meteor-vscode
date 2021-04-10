@@ -1,11 +1,12 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import { WorkspaceConfiguration } from 'vscode'
+import Config from '../config'
 
 export default class Traverse {
-  private config?: any
+  private config?: Config
   private rootPath?: string
-  public constructor(config: WorkspaceConfiguration, rootPath: string) {
+  public constructor(config: Config, rootPath: string) {
     this.config = config
     this.rootPath = rootPath
   }
@@ -14,12 +15,12 @@ export default class Traverse {
     let files: any[] = [];
     let cond = null;
     let that: any = this
-    if (this.config.componentPath && Array.isArray(this.config.componentPath) && this.config.componentPath.length > 0) {
+    if (this.config?.get('componentPath') && Array.isArray(this.config?.get('componentPath')) && this.config?.get('componentPath').length > 0) {
       cond = function (rootPath: any) {
-        return that.config.componentPath.indexOf(rootPath) !== -1;
+        return that.config?.get('componentPath').indexOf(rootPath) !== -1;
       };
     } else {
-      let ignore = this.config.componentIgnore || [];
+      let ignore = this.config?.get('componentIgnore') || [];
       if (!Array.isArray(ignore)) {
         ignore = [ignore];
       }
@@ -29,7 +30,7 @@ export default class Traverse {
       };
     }
     let rootPathes = fs.readdirSync(this.rootPath || '');
-    let prefix = this.config.pathAlias;
+    let prefix = this.config?.get('pathAlias');
     
     for (let i = 0; i < rootPathes.length; i++) {
       const rootPath = rootPathes[i];
@@ -51,7 +52,7 @@ export default class Traverse {
       let posterReg = new RegExp('-?(.*)' + (poster ? poster : '\\.\\w*') + '$', 'gi');
       let name = rootPath;
       if (poster === '.vue') {
-        if (this.config.componentNamingRule === 'kebabCase') {
+        if (this.config?.get('componentNamingRule') === 'kebabCase') {
           name = name.replace(/([A-Z_])/g, (_, c) => {
             if (c === '_') {
               return '-';
@@ -59,11 +60,11 @@ export default class Traverse {
               return c ? ('-' + c.toLowerCase()) : '';
             }
           }).replace(posterReg, '$1'); 
-        } else if (this.config.componentNamingRule === 'camelCase') {
+        } else if (this.config?.get('componentNamingRule') === 'camelCase') {
           name = name.replace(/(-[a-z])/g, (_, c) => {
             return c ? c.toUpperCase() : '';
           }).replace(/-/gi, '').replace(posterReg, '$1');
-        }  else if (this.config.componentNamingRule === 'CamelCase') {
+        }  else if (this.config?.get('componentNamingRule') === 'CamelCase') {
           name = name.replace(/(-[a-z])/g, (_, c) => {
             return c ? c.toUpperCase() : '';
           }).replace(/-/gi, '').replace(posterReg, '$1');

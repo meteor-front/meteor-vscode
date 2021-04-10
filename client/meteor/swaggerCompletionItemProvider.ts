@@ -21,8 +21,8 @@ export default class SwaggerCompletionItemProvider implements CompletionItemProv
     if (this.completions.length === 0) {
       this.workspaceRoot = getWorkspaceRoot(document.uri.path)
       this.tabSpace = setTabSpace()
-      this.meteor.swagger.getSwagger(false)
-      let url = this.meteor.swagger.getUrl()
+      this.meteor.swagger.generate(true, false, false)
+      let url = this.meteor.swagger.generate(true, false, false)
       if (url) {
         let res: any = this.meteor.swagger.swaggerData
         if (res && res.data) {
@@ -86,7 +86,9 @@ export default class SwaggerCompletionItemProvider implements CompletionItemProv
                   name: apiName,
                   type: type,
                   text: insertText,
-                  swagger: this.meteor.swagger.swaggerData.data
+                  swagger: this.meteor.swagger.swaggerData.data,
+                  postWay: postWay,
+                  apiUrl: apiUrl
                 }] },
                 documentation: `[${postBody.tags[0] || 'meteor'}] ${postBody.summary}`
               })

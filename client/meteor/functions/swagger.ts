@@ -23,18 +23,35 @@ export default class SwaggerFactory {
     this.projectName = this.workspaceRoot.replace(/.*\//gi, '')
   }
   // swagger生成api
-  async generate(justData: boolean) {
-    let swaggerUrlConfig: any = this.meteor.config.get('swaggerUrl') || [];
+  async generate(justData: boolean, isForce: boolean, updateUrl: boolean) {
+    let swaggerUrlConfig: any = this.meteor.config.get('swaggerUrl') || {};
     let url = swaggerUrlConfig[this.projectName] || ''
+    if (updateUrl) {
+      url = ''
+    }
     // 新增操作
-    if (!url) {
+    if (!url && !justData) {
       url = await window.showInputBox({
         placeHolder: '请输入swagger地址'
       });
       if (url) {
-        swaggerUrlConfig[this.projectName] = url
-        this.meteor.config.update('swaggerUrl', swaggerUrlConfig, ConfigurationTarget.Global);
-      } else {
+        if (Object.keys(swaggerUrlConfig).length === 0) {
+          swaggerUrlConfig = {
+            [this.projectName]: url
+          }
+        } else {
+          swaggerUrlConfig[this.projectName] = url
+        }
+        this.meteor.config.update('swaggerUrl', swaggerUrlConfig);
+      }
+    }
+    // url不存在，结束
+    if (!url) {
+      return
+    }
+    // 强制刷新数据
+    if (!(justData && (!this.swaggerData || isForce))) {
+      if (justData) {
         return
       }
     }
@@ -42,7 +59,6 @@ export default class SwaggerFactory {
     if (url.includes('swagger-ui.html') || url.includes('doc.html')) {
       // html地址，进行转换
       url = url.replace(/(.*)swagger-ui.html.*/gi, '$1swagger-resources').replace(/(.*)doc.html.*/gi, '$1swagger-resources')
-      console.log('replace: ' + url)
       let res = await this.meteor.fetch.get(url);
       if (res && res.data) {
         url = url.replace('/swagger-resources', res.data[0].url || res.data[0].location);
@@ -51,77 +67,100 @@ export default class SwaggerFactory {
     // 获取swagger api内容
     let res = await this.meteor.fetch.get(url);
     if (res && res.data) {
-      this.paths = res.data.paths
-      let docs: any = {};
-      res.data.tags.forEach((tag: any) => {
-        let name = tag.description.replace(/\s/gi, '').replace(/Controller$/gi, '');
-        name = name[0].toLowerCase() + name.substr(1, name.length);
-        docs[tag.name] = {};
-        let apiPath = path.join(this.workspaceRoot, this.meteor.config.get('rootPathApi') || '', name + '.js');
-        apiPath = winRootPathHandle(apiPath);
-        docs[tag.name].name = name;
-        docs[tag.name].url = apiPath;
-      })
-      this.docs = docs
-
-      let apis: string[] = [];
-      let items: QuickPickItem[] = [];
-      let names = [];
-      for (const apiUrl in res.data.paths) {
-        const post = res.data.paths[apiUrl];
-        for (const postWay in post) {
-          const postBody = post[postWay];
-          apis.push(`[${postWay}] ${apiUrl}`)
-          items.push({
-            label: `[${postWay}] ${apiUrl}`,
-            description: ''
-          });
-          names.push(postBody.tags[0]);
+      if (res.data.paths) {
+        this.paths = res.data.paths
+        let docs: any = {};
+        res.data.tags.forEach((tag: any) => {
+          let name = tag.description.replace(/\s/gi, '').replace(/Controller$/gi, '');
+          name = name[0].toLowerCase() + name.substr(1, name.length);
+          docs[tag.name] = {};
+          let apiPath = path.join(this.workspaceRoot, this.meteor.config.get('rootPathApi') || '', name + '.js');
+          apiPath = winRootPathHandle(apiPath);
+          docs[tag.name].name = name;
+          docs[tag.name].url = apiPath;
+        })
+        this.docs = docs
+  
+        let apis: string[] = [];
+        let items: QuickPickItem[] = [];
+        let names = [];
+        for (const apiUrl in res.data.paths) {
+          const post = res.data.paths[apiUrl];
+          for (const postWay in post) {
+            const postBody = post[postWay];
+            apis.push(`[${postWay}] ${apiUrl}`)
+            items.push({
+              label: `[${postWay}] ${apiUrl}`,
+              description: ''
+            });
+            names.push(postBody.tags[0]);
+          }
         }
-      }
-      this.apis = apis
-      this.names = names
-      this.swaggerData = res
-
-      if (justData) {
-        return
-      }
-
-      const templatePick = window.createQuickPick();
-      templatePick.title = 'Swagger接口生成';
-      templatePick.placeholder = '选择接口名称';
-      class TemplateButton implements QuickInputButton {
-        constructor(public iconPath: { light: Uri; dark: Uri; }, public tooltip: string) { }
-      }
-      templatePick.buttons = [new TemplateButton({
-        dark: Uri.file(this.meteor.context.asAbsolutePath('asset/dark/replace.svg')),
-        light: Uri.file(this.meteor.context.asAbsolutePath('asset/light/replace.svg')),
-      }, '替换Swagger地址'), new TemplateButton({
-        dark: Uri.file(this.meteor.context.asAbsolutePath('asset/dark/all.svg')),
-        light: Uri.file(this.meteor.context.asAbsolutePath('asset/dark/all.svg')),
-      }, '生成全部接口')];
-      templatePick.items = items;
-      templatePick.onDidChangeSelection(selection => {
-        templatePick.hide();
-        // 打开工程才能继续
-        if (workspace.workspaceFolders && selection[0] && selection[0].label) {
-          this.generateSingleApi(selection[0].label)
+        this.apis = apis
+        this.names = names
+        this.swaggerData = res
+  
+        if (justData) {
+          return
         }
-      });
-      templatePick.onDidTriggerButton(item => {
-        switch (item.tooltip) {
-          case '替换Swagger地址':
-            break;
-          case '生成全部接口':
-            break;
-        
-          default:
-            break;
+  
+        const templatePick = window.createQuickPick();
+        templatePick.title = 'Swagger接口生成';
+        templatePick.placeholder = '选择接口名称';
+        class TemplateButton implements QuickInputButton {
+          constructor(public iconPath: { light: Uri; dark: Uri; }, public tooltip: string) { }
         }
-      }),
-      templatePick.onDidHide(() => templatePick.dispose());
-      templatePick.show();
+        templatePick.buttons = [new TemplateButton({
+          dark: Uri.file(this.meteor.context.asAbsolutePath('asset/dark/replace.svg')),
+          light: Uri.file(this.meteor.context.asAbsolutePath('asset/light/replace.svg')),
+        }, '替换Swagger地址'), new TemplateButton({
+          dark: Uri.file(this.meteor.context.asAbsolutePath('asset/dark/all.svg')),
+          light: Uri.file(this.meteor.context.asAbsolutePath('asset/dark/all.svg')),
+        }, '生成全部接口')];
+        templatePick.items = items;
+        templatePick.onDidChangeSelection(selection => {
+          templatePick.hide();
+          // 打开工程才能继续
+          if (workspace.workspaceFolders && selection[0] && selection[0].label) {
+            this.generateSingleApi(selection[0].label)
+          }
+        });
+        templatePick.onDidTriggerButton(item => {
+          switch (item.tooltip) {
+            case '替换Swagger地址':
+              this.generate(false, false, true)
+              break;
+            case '生成全部接口':
+              this.generateAllApi()
+              break;
+          
+            default:
+              break;
+          }
+        }),
+        templatePick.onDidHide(() => templatePick.dispose());
+        templatePick.show();
+      } else {
+        window.showWarningMessage('swagger请求数据错误，[更换地址](command:meteor.replaceSwaggerAddress)！')
+      }
     }
+  }
+
+  // 生成全部接口
+  generateAllApi() {
+    console.log('generateAllApi')
+    for (const key in this.docs) {
+      if (Object.prototype.hasOwnProperty.call(this.docs, key)) {
+        const doc = this.docs[key];
+        let apiPath = path.join(this.workspaceRoot, this.meteor.config.get('rootPathApi') || '', doc.name + '.js');
+        apiPath = winRootPathHandle(apiPath);
+        try {
+          fs.writeFileSync(apiPath, 'import request from \'@/utils/request\'\n');
+        } catch (error) {
+        }
+      }
+    }
+    this.writeApi(true, '', '')
   }
 
   // 生成单个接口
@@ -147,6 +186,7 @@ export default class SwaggerFactory {
   writeApi(all: boolean, singleApi: string, singleApiPathName: string) {
     // 生成接口
     let store: any = {};
+    let apiNameList: string[] = []
     for (const apiUrl in this.paths) {
       const post = this.paths[apiUrl];
       for (const postWay in post) {
@@ -155,22 +195,26 @@ export default class SwaggerFactory {
         let paramName = '';
         let dataName = '';
         // 拼装apiUrl
-        let apiUrlArr = apiUrl.split('/');
-        let apiUrlLen = apiUrlArr.length;
+        let apiUrlArrPrev: string[] = apiUrl.split('/');
+        let apiUrlArr: string[] = []
+        let apiUrlLen = apiUrlArrPrev.length;
         let remark = '\n/**\n';
         if (postBody.description) {
           remark += '* ' + postBody.description + '\n';
         }
+        console.log('1')
         postBody.parameters && postBody.parameters.forEach((parameter: any) => {
           remark += `* @argument {*} ${parameter.name} ${parameter.description || ''}\n`;
         });
         remark += '*/\n';
         if (apiUrlLen > 2) {
-          let last = apiUrlArr[apiUrlLen - 1];
-          let prev = apiUrlArr[apiUrlLen - 2];
+          let last = apiUrlArrPrev[apiUrlLen - 1];
+          let prev = apiUrlArrPrev[apiUrlLen - 2];
+          let idInParent = false
           if (/^{.*}$/gi.test(prev)) {
             prev = prev.replace(/^{(.*)}$/, '$1');
             paramName += prev + ', ';
+            idInParent = true
             prev = 'by' + prev[0].toUpperCase() + prev.substr(1, prev.length);
           }
           if (/^{.*}$/gi.test(last)) {
@@ -178,18 +222,53 @@ export default class SwaggerFactory {
             paramName += last + ', ';
             last = 'by' + last[0].toUpperCase() + last.substr(1, last.length);
           }
-          apiUrlArr = [prev, last];
-          if (last.length >= 15) {
-            // 如果api名称超过15位，则默认只取最后一个字段
+          if (idInParent) {
+            apiUrlArr = [prev, last];
+          } else {
             apiUrlArr = [last];
           }
+        } else {
+          apiUrlArr = [apiUrlArrPrev[apiUrlLen - 1]]
         }
+        console.log('2')
         if (postWay !== 'post') {
-          if (!apiUrlArr[0].toLowerCase().includes(postWay)) {
+          if (apiUrlArr[0] && !apiUrlArr[0].toLowerCase().includes(postWay)) {
             apiUrlArr.unshift(postWay);
           }
         }
+        console.log('22')
+        // 重名处理
         apiName = camelCase(apiUrlArr);
+        if (apiNameList.indexOf(apiName) !== -1) {
+          let name = ''
+          if (apiUrlLen > 2) {
+            name = apiUrlArrPrev[apiUrlLen - 2]
+            if (!/^{.*}$/gi.test(name)) {
+              let apiUrlArrFix = [name, ...apiUrlArr]
+              apiName = camelCase(apiUrlArrFix);
+            }
+            if (apiNameList.indexOf(apiName) !== -1) {
+              if (apiUrlLen > 3) {
+                name = apiUrlArrPrev[apiUrlLen - 3]
+                if (!/^{.*}$/gi.test(name)) {
+                  let apiUrlArrFix = [name, ...apiUrlArr]
+                  apiName = camelCase(apiUrlArrFix);
+                }
+              }
+              if (apiNameList.indexOf(apiName) !== -1) {
+                if (apiUrlLen > 4) {
+                  name = apiUrlArrPrev[apiUrlLen - 4]
+                  if (!/^{.*}$/gi.test(name)) {
+                    let apiUrlArrFix = [name, ...apiUrlArr]
+                    apiName = camelCase(apiUrlArrFix);
+                  }
+                }
+              }
+            }
+          }
+        }
+        console.log('3')
+        apiNameList.push(apiName)
         if (postWay === 'get') {
           paramName += 'params';
           dataName = '{ params }';
@@ -205,11 +284,11 @@ let func = `export function ${apiName}(${paramName}) {
           if (this.docs[postBody.tags[0]]) {
             if (all || (!all && singleApi === `[${postWay}] ${apiUrl}`)) {
               let apiText = fs.readFileSync(this.docs[postBody.tags[0]].url, 'utf-8')
-              if (new RegExp(`export\\s*function\\s*${apiName}`).test(apiText)) {
-                console.log('exist')
+              if (!all && new RegExp(`export\\s*function\\s*${apiName}`).test(apiText)) {
                 // 接口已存在
                 return
               }
+              console.log('4')
               this.docs[postBody.tags[0]].url = winRootPathHandle(this.docs[postBody.tags[0]].url);
               fs.appendFileSync(this.docs[postBody.tags[0]].url, remark + func, 'utf-8');
               if (store[this.docs[postBody.tags[0]].name]) {
@@ -259,6 +338,7 @@ let func = `export function ${apiName}(${paramName}) {
         }
       }
     }
+    console.log(apiNameList)
     return store
   }
 
@@ -390,8 +470,6 @@ return res.data
       });
     }
   }
-
-  // 
 
   // 生成api
   async generateApi(url: string) {
@@ -738,7 +816,6 @@ export default {
         let text = ''
         while(currentActiveLine > 0) {
           text = editor.document.lineAt(currentActiveLine - 1).text
-          console.log(text)
           if (/^\s*async\s*\w*\(\w*\)\s*{\s*$/gi.test(text)) {
             break
           } else if (/^\s*\w*\(\w*\)\s*{\s*$/gi.test(text)) {
@@ -836,7 +913,6 @@ export default {
         let text = ''
         while(currentActiveLine > 0) {
           text = editor.document.lineAt(currentActiveLine - 1).text
-          console.log(text)
           if (/^\s*async\s*\w*\(\w*\)\s*{\s*$/gi.test(text)) {
             break
           } else if (/^\s*\w*\(\w*\)\s*{\s*$/gi.test(text)) {
@@ -858,26 +934,5 @@ export default {
         }
       })
     }
-  }
-
-  // 获取swagger返回信息
-  async getSwagger(isForce: boolean) {
-    let url = this.getUrl()
-    if (url && (!this.swaggerData || isForce)) {
-      // 生成接口选项列表
-      if (url.includes('swagger-ui.html') || url.includes('doc.html')) {
-        // html地址，进行转换
-        url = url.replace(/(.*)swagger-ui.html.*/gi, '$1swagger-resources').replace(/(.*)doc.html.*/gi, '$1swagger-resources')
-        let res = await this.meteor.fetch.get(url);
-        if (res && res.data) {
-          url = url.replace('/swagger-resources', res.data[0].url || res.data[0].location);
-        }
-      }
-      // 获取swagger api内容
-      this.swaggerData = await this.meteor.fetch.get(url);
-    }
-  }
-  getUrl() {
-    return this.meteor.config.swaggerUrl && this.meteor.config.swaggerUrl[this.projectName] || ''
   }
 }

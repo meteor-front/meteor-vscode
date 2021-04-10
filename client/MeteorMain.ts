@@ -55,9 +55,16 @@ export function activate(context: vscode.ExtensionContext) {
 		open(url.official);
 	});
   // swagger生成api
-	vscode.commands.registerCommand('meteor.swagger', async () => {
-		meteor.swagger.generate(false)
+  const statusCommandId = 'meteor.swagger'
+	vscode.commands.registerCommand(statusCommandId, async () => {
+		meteor.swagger.generate(false, false, false)
 	});
+  // 状态栏
+  let statusBarItem: vscode.StatusBarItem;
+  statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 9999);
+	statusBarItem.command = statusCommandId;
+  statusBarItem.text = 'Swagger'
+  statusBarItem.show()
   // 页面生成
 	vscode.commands.registerCommand('meteor.newPage', (uri) => {
 		meteor.newPage.showQuickPick(context, uri)
@@ -74,6 +81,10 @@ export function activate(context: vscode.ExtensionContext) {
 	vscode.commands.registerCommand('meteor.newProject', () => {
 		NewProjectPanel.createOrShow(context.extensionPath);
 	});
+  // 更新swagger地址
+  vscode.commands.registerCommand('meteor.replaceSwaggerAddress', () => {
+    meteor.swagger.generate(false, false, true)
+  })
   // 打开工程目录
 	vscode.commands.registerCommand("meteor.openProject", (node: string | any) => {
 		let projectDir = NewProjectPanel.projectDir;
@@ -96,8 +107,9 @@ export function activate(context: vscode.ExtensionContext) {
   vscode.commands.registerCommand('meteor.apiGenerateFileExtra', (params) => {
     meteor.completionItemProvider.setSwagger(params.swagger)
     meteor.swagger.apiGenerateFileExtra(params)
-    meteor.swagger.
+    meteor.swagger.generateSingleApi(`[${params.postWay}] ${params.apiUrl}`)
   })
+
   // 到达定义函数
   vscode.languages.registerDefinitionProvider(['vue', 'javascript', 'html'], new MeteorDefinitionProvider());
   vscode.languages.registerHoverProvider('vue', new DocumentHoverProvider);

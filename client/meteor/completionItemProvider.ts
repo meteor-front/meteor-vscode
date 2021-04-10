@@ -9,6 +9,7 @@ const pretty = require('pretty');
 import { setTabSpace, getWorkspaceRoot, getRelativePath } from '../meteor/utils/util';
 import Traverse from './utils/traverse';
 import Meteor from './meteor'
+import Config from './config'
 const camelCase = require('camelcase');
 
 export interface TagObject {
@@ -22,7 +23,7 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
   private tagReg: RegExp = /<([\w-]+)\s+/g;
   private attrReg: RegExp = /(?:\(|\s*)((\w(-)?)*)=['"][^'"]*/;  // 能够匹配 left-right 属性
   private tagStartReg: RegExp = /<([\w-]*)$/;
-  private config: WorkspaceConfiguration
+  private config: Config
   private workspaceRoot: string = ''
   private CompletionItemKey = [
     'Text   ',
@@ -189,7 +190,7 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
     }
   }
 
-  public constructor(config: WorkspaceConfiguration, meteor: Meteor) {
+  public constructor(config: Config, meteor: Meteor) {
     this.config = config
     this.meteor = meteor
     this.traverse = new Traverse(config, getWorkspaceRoot(window.activeTextEditor?.document.uri.path || ''))
@@ -709,7 +710,7 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
     if (pathRegArr && pathRegArr.length > 0) {
       let tagPath = pathRegArr[0];
       tagPath = tagPath.replace(/(.*['"])/, '');
-      tagPath = tagPath.replace(this.config.pathAlias.alias, this.config.pathAlias.path);
+      tagPath = tagPath.replace(this.config.get('pathAlias').alias, this.config.get('pathAlias').path);
       if (!tagPath.endsWith('.vue')) {
         tagPath += '.vue';
       }
@@ -800,9 +801,9 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
     if (!filePath.endsWith('.js')) {
       filePath += '.js';
     }
-    if (filePath.includes(this.config.pathAlias.alias)) {
+    if (filePath.includes(this.config.get('pathAlias').alias)) {
       // 别名替换
-      filePath = filePath.replace(this.config.pathAlias.alias, this.config.pathAlias.path);
+      filePath = filePath.replace(this.config.get('pathAlias').alias, this.config.get('pathAlias').path);
       filePath = path.join(this.workspaceRoot, filePath)
     } else if (filePath.startsWith('./') || filePath.startsWith('../')) {
       // 相对路径

@@ -243,7 +243,8 @@
         },
         "meteor.swaggerUrl": {
           "type": "object",
-          "description": "swagger url"
+          "description": "swagger url",
+          "default": {}
         },
         "meteor.user": {
           "type": "string",

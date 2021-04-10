@@ -1,4 +1,4 @@
-import { ExtensionContext, workspace, WorkspaceConfiguration, window, ProgressLocation, Position, Selection, Range, TextEditorRevealType } from 'vscode'
+import { ExtensionContext, window, ProgressLocation, Position, Selection, Range, TextEditorRevealType } from 'vscode'
 import axios, { AxiosInstance } from 'axios';
 import MeteorCompletionItemProvider from './completionItemProvider';
 import SwaggerCompletionItemProvider from './swaggerCompletionItemProvider';
@@ -9,11 +9,13 @@ import Swagger from './functions/swagger'
 import NewPage from './functions/newPage'
 import * as path from 'path'
 import * as fs from 'fs'
+import Config from './config'
+
 export default class Meteor {
   // vscode上下文
   public context: ExtensionContext
   // 配置信息
-  public config: WorkspaceConfiguration
+  public config: Config
   // 完成项提供Provider
   public completionItemProvider: MeteorCompletionItemProvider
   public swaggerCompletionItemProvider: SwaggerCompletionItemProvider
@@ -24,7 +26,7 @@ export default class Meteor {
   public newPage: NewPage
   constructor(context: ExtensionContext) {
     this.context = context
-    this.config = workspace.getConfiguration('meteor');
+    this.config = new Config()
     this.fetch = axios.create({
       baseURL: url.base,
       withCredentials: false,
