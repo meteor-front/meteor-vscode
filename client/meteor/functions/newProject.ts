@@ -19,6 +19,7 @@ export default class NewProjectPanel {
 	private readonly _panel: vscode.WebviewPanel;
 	private readonly _extensionPath: string;
 	private _disposables: vscode.Disposable[] = [];
+  public hasWebview: boolean = false
 
 	public static createOrShow(extensionPath: string) {
 		const column = vscode.window.activeTextEditor
@@ -57,7 +58,10 @@ export default class NewProjectPanel {
 		this._extensionPath = extensionPath;
 
 		// 设置webview中的html内容
-		this._update();
+		if (!this.hasWebview) {
+      this._update();
+      this.hasWebview = true
+    }
 
 		// 监听面板是否被disposed
 		// 当用户关闭面板后者程序被关闭时发生
@@ -67,7 +71,10 @@ export default class NewProjectPanel {
 		this._panel.onDidChangeViewState(
 			e => {
 				if (this._panel.visible) {
-					this._update();
+					if (!this.hasWebview) {
+            this._update();
+            this.hasWebview = true
+          }
 				}
 			},
 			null,

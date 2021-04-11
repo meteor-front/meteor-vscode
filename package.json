@@ -4,7 +4,7 @@
   "description": "every thing for speed",
   "author": "shenjiaolong",
   "icon": "asset/logo.png",
-  "version": "3.1.0",
+  "version": "3.2.0",
   "publisher": "shenjiaolong",
   "scripts": {
     "postinstall": "run-s install:*",
@@ -95,7 +95,11 @@
       },
       {
         "command": "meteor.upload",
-        "title": "上传页面/组件"
+        "title": "上传页面/组件",
+        "icon": {
+          "light": "asset/light/upload.svg",
+          "dark": "asset/dark/upload.svg"
+        }
       },
       {
         "command": "meteor.newProject",
@@ -178,7 +182,7 @@
     "viewsWelcome": [
       {
         "view": "meteorExplorer",
-        "contents": "Meteor\n[新建工程](command:meteor.newProject) \n[上传页面/组件](command:meteor.upload)\n查看[文档](http://www.80fight.cn/)学习Meteor"
+        "contents": "[新建工程](command:meteor.newProject) \n[上传页面/组件](command:meteor.upload)\n查看[文档](http://www.80fight.cn/)学习Meteor"
       }
     ],
     "menus": {
@@ -192,6 +196,10 @@
       "editor/title": [
         {
           "command": "meteor.openOfficial",
+          "group": "navigation"
+        },
+        {
+          "command": "meteor.upload",
           "group": "navigation"
         }
       ]
@@ -235,6 +243,11 @@
           "type": "string",
           "description": "root path folder for vuex store generate",
           "default": "src/store"
+        },
+        "meteor.rootPathRequest": {
+          "type": "string",
+          "description": "root path for request file",
+          "default": "../utils/request.js"
         },
         "meteor.rootPath": {
           "type": "string",

@@ -75,6 +75,9 @@ export function activate(context: vscode.ExtensionContext) {
 	});
   // 上传页面/组件
 	vscode.commands.registerCommand('meteor.upload', (activeTab) => {
+    if (['1', '2', 1, 2].indexOf(activeTab) === -1) {
+      activeTab = '1'
+    }
 		UploadPanel.createOrShow(context.extensionPath, activeTab);
 	});
   // 新建工程

@@ -15,6 +15,7 @@ export default class UploadPanel {
 	public static readonly viewType = 'meteorCreatProject';
 	public static projectDir: string;
 	public static activeTab = '1'
+  public hasWebview: boolean = false
 
 	private readonly _panel: vscode.WebviewPanel;
 	private readonly _extensionPath: string;
@@ -33,8 +34,8 @@ export default class UploadPanel {
 		// 否则创建一个新的面板.
 		const panel = vscode.window.createWebviewPanel(
 			UploadPanel.viewType,
-			'创建新工程',
-			column || vscode.ViewColumn.One,
+			'Meteor',
+      column || vscode.ViewColumn.One,
 			{
 				// webview允许使用javascript
 				enableScripts: true,
@@ -57,7 +58,10 @@ export default class UploadPanel {
 		this._extensionPath = extensionPath;
 
 		// 设置webview中的html内容
-		this._update();
+    if (!this.hasWebview) {
+      this._update();
+      this.hasWebview = true
+    }
 
 		// 监听面板是否被disposed
 		// 当用户关闭面板后者程序被关闭时发生
@@ -67,7 +71,10 @@ export default class UploadPanel {
 		this._panel.onDidChangeViewState(
 			e => {
 				if (this._panel.visible) {
-					this._update();
+          if (!this.hasWebview) {
+            this._update();
+            this.hasWebview = true
+          }
 				}
 			},
 			null,
@@ -81,9 +88,6 @@ export default class UploadPanel {
 					case 'create':
 						// vscode.window.showErrorMessage(message.id + ' - ' + message.text);
 						this._create(message);
-						return;
-					case 'selBaseDir':
-						this._selBaseDir();
 						return;
 					case 'getPageConfig':
 						this.getPageConfig();
@@ -118,14 +122,8 @@ export default class UploadPanel {
 	}
 	// 修改页面配置信息
 	modifyPageConfig(message: any) {
-		if (message.config.pageRootPath) {
-			vscode.workspace.getConfiguration('meteor').update('pageRootPath', message.config.pageRootPath);
-		}
-		if (message.config.componentRootPath) {
-			vscode.workspace.getConfiguration('meteor').update('componentRootPath', message.config.componentRootPath);
-		}
 		if (message.config.user) {
-			vscode.workspace.getConfiguration('meteor').update('user', message.config.user);
+			vscode.workspace.getConfiguration('meteor').update('user', message.config.user, vscode.ConfigurationTarget.Global);
 		}
 		this._panel.webview.postMessage({ command: 'modifyConfigDone'});
 	}
@@ -133,26 +131,6 @@ export default class UploadPanel {
 	getPageConfig() {
 		const config = vscode.workspace.getConfiguration('meteor');
 		this._panel.webview.postMessage({ command: 'backConfig', config});
-	}
-
-	// 选择目录
-	private async _selBaseDir() {
-		let rootPath = data.dateGet('rootPath');
-		const options: vscode.OpenDialogOptions = {
-			canSelectFolders: true,
-			canSelectFiles: false,
-			canSelectMany: false,
-			openLabel: 'Open'
-		};
-		if (rootPath) {
-		  options.defaultUri = vscode.Uri.parse(rootPath);
-		}
-		const selectFolderUri = await vscode.window.showOpenDialog(options);
-		if (selectFolderUri && Array.isArray(selectFolderUri)) {
-			let basePath = selectFolderUri[0].path;
-			data.dataSave('rootPath', basePath);
-			this._panel.webview.postMessage({ command: 'path', path: basePath });
-		}
 	}
 
 	// 创建工程

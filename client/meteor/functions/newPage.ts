@@ -1,8 +1,9 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
-import { winRootPathHandle, open, url } from '../utils/util';
+import { winRootPathHandle, open, url, getRelativePath, getWorkspaceRoot } from '../utils/util';
 import vuePropsDef from '../utils/vueProps';
+import Meteor from '../meteor'
 
 export default class NewPage {
   public static templateRoot: string = 'asset/template';
@@ -27,7 +28,8 @@ export default class NewPage {
     VUE: 'vue',
     REACT: 'react'
   };
-
+  public static meteor: Meteor
+ 
   // 通过配置设置页面参数
   public static setPageByConfig(config: string) {
     // 过滤暂时不做 读取工程的package.json
@@ -804,7 +806,9 @@ ${space}},\n`;
     } else if (type === 'apiEachStore') {
       // 单个api对应的store
       let apiPath = options.apiStore.apiPath.replace(/.js/, '');
-      tempStr = tempStr.replace(/##/gi, apiPath);
+      let workspaceRoot = getWorkspaceRoot('')
+      let relativePath = getRelativePath(path.join(workspaceRoot, this.meteor.config.get('rootPathStore'), 'modules/store'), path.join(workspaceRoot, this.meteor.config.get('rootPathApi')))
+      tempStr = tempStr.replace(/##/gi, path.join(relativePath, apiPath));
       let tempArr = tempStr.split('\n');
       let tempContent = '';
       let len = tempArr.length;

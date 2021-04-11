@@ -14,8 +14,11 @@
 在vscode命令行执行 `meteor:api`
 ![apiCreate.gif](https://www.80fight.cn/vscode/apiCreate.gif)
 ## swagger生成接口
-在vscode命令行执行 `meteor:swagger`。可根据swagger一次性全部生成，也可以根据某个接口名称单个生成。
-![swaggerCreate.gif](https://www.80fight.cn/vscode/swaggerCreate.gif)
++ 在vscode命令行执行 `meteor:swagger`。可根据swagger一次性全部生成，也可以根据某个接口名称单个生成。 <br>
++ 通过状态栏可直接打开swagger生成窗口<br>
++ 在页面中可直接通过接口名称引入接口、并提供参数提示功能
+![swaggerCreate.gif](https://www.80fight.cn/vscodeImgs/swaggerCreateApi.gif)
+![swaggerInFile.gif](https://www.80fight.cn/vscodeImgs/swaggerInFile.gif)
 ## vscode右上角进入官网
 ![goOfficial.gif](https://www.80fight.cn/vscode/goOfficial.gif)
 ## 完成项功能增强

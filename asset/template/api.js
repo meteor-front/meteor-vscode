@@ -1,4 +1,4 @@
-import {} from '@/api/##'
+import {} from '##'
 
 const state = () => {
   return {

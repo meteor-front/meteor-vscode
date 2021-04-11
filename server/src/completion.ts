@@ -15,10 +15,7 @@ export default class Completion {
     this.meteorConfig = meteorConfig
     this.fetch = axios.create({
       baseURL: 'http://www.80fight.cn:8080',
-      withCredentials: false,
-      headers: {
-        token: '20'
-      }
+      withCredentials: false
     })
   }
   updateConfig(meteorConfig: any) {

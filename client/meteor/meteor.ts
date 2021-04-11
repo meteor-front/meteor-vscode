@@ -30,10 +30,7 @@ export default class Meteor {
     this.config = new Config()
     this.fetch = axios.create({
       baseURL: url.base,
-      withCredentials: false,
-      headers: {
-        token: '20'
-      }
+      withCredentials: false
     })
     this.tabSpace = setTabSpace()
     this.swagger = new Swagger(this)
@@ -41,6 +38,7 @@ export default class Meteor {
     this.swaggerCompletionItemProvider = new SwaggerCompletionItemProvider(this)
     this.block = new Block()
     this.backSpace = new BackSpace()
+    NewPage.meteor = this
     this.newPage = new NewPage()
   }
 

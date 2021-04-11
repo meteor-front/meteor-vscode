@@ -235,7 +235,7 @@ export default class SwaggerFactory {
         let apiPath = path.join(this.workspaceRoot, this.meteor.config.get('rootPathApi') || '', doc.name + '.js');
         apiPath = winRootPathHandle(apiPath);
         try {
-          fs.writeFileSync(apiPath, 'import request from \'@/utils/request\'\n');
+          fs.writeFileSync(apiPath, `import request from \'${this.meteor.config.get('rootPathRequest')}'\n`);
         } catch (error) {
         }
       }
@@ -257,7 +257,7 @@ export default class SwaggerFactory {
         fs.statSync(singleApiPath);
       }
     } catch (error) {
-      fs.writeFileSync(singleApiPath, 'import request from \'@/utils/request\'\n');
+      fs.writeFileSync(singleApiPath, `import request from \'${this.meteor.config.get('rootPathRequest')}'\n`);
     }
     this.writeApi(false, singleApi, singleApiPathName)
   }
@@ -354,7 +354,8 @@ let func = `export function ${apiName}(${paramName}, config) {
     for (const storeFileName in store) {
       const storeMethods = store[storeFileName];
       let storeStr = '';
-      storeStr = `import { #import#} from '@/api/${storeFileName}'
+      let relativePath = getRelativePath(path.join(this.workspaceRoot, this.meteor.config.get('rootPathStore'), 'modules/store'), path.join(this.workspaceRoot, this.meteor.config.get('rootPathApi')))
+      storeStr = `import { #import#} from '${relativePath}/${storeFileName}'
 
 const state = () => {
 ${this.meteor.tabSpace}return {
@@ -444,7 +445,7 @@ ${this.meteor.tabSpace}}`;
         docs[tag.name].url = apiPath;
         try {
           if (all) {
-            fs.writeFileSync(apiPath, 'import request from \'@/utils/request\'\n');
+            fs.writeFileSync(apiPath, `import request from \'${this.meteor.config.get('rootPathRequest')}'\n`);
           }
         } catch (error) {
         }
