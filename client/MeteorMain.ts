@@ -78,6 +78,7 @@ export function activate(context: vscode.ExtensionContext) {
     if (['1', '2', 1, 2].indexOf(activeTab) === -1) {
       activeTab = '1'
     }
+    // console.log('uri', vscode.window.activeTextEditor?.document.uri.path)
 		UploadPanel.createOrShow(context.extensionPath, activeTab);
 	});
   // 新建工程

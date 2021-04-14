@@ -39,6 +39,7 @@ export default class Meteor {
     this.block = new Block()
     this.backSpace = new BackSpace()
     NewPage.meteor = this
+    NewPage.context = context
     this.newPage = new NewPage()
   }
 
@@ -48,7 +49,18 @@ export default class Meteor {
    */
    async sync() {
     // 获取页面数据
-    let res = await this.fetch.get('widget?tag=&type=&searchValue=');
+    let user = this.config.get('user')
+    if (user) {
+      user = JSON.parse(user)
+    } else {
+      window.showInformationMessage('请先[登录](command:meteor.upload)')
+      return
+    }
+    let res = await this.fetch.get('widget?tag=&type=&searchValue=', {
+      headers: {
+        token: user.token
+      }
+    });
     window.withProgress({
       location: ProgressLocation.Notification,
       title: 'meteor',

@@ -29,6 +29,46 @@ export default class NewPage {
     REACT: 'react'
   };
   public static meteor: Meteor
+  public static activeTextEditor: vscode.TextEditor | undefined;
+  public static selectedFolder: string
+
+  // 生成页面
+  public static generatePage(page: any) {
+    if (page.type === '0') {
+      // 组件
+      let edior: vscode.TextEditor | undefined = NewPage.activeTextEditor
+      if (edior) {
+        // 生成组件
+        // 获取文件所在文件夹
+        let uriPath = edior.document.uri.path
+        if (uriPath.includes('.')) {
+          uriPath = uriPath.replace(/\/\w*.\w*$/gi, '')
+        }
+        NewPage.init(NewPage.context, vscode.Uri.parse(uriPath));
+        NewPage.way = NewPage.GenerateWay.COMPONENT;
+        NewPage.setComponent(NewPage.context);
+        NewPage.getQuickPickItems()
+        NewPage.pick = page.name;
+        NewPage.pageName = page.name;
+        NewPage.generate();
+      } else {
+        vscode.window.showInformationMessage('请选择插入位置！')
+      }
+    } else if (page.type === '1') {
+      // 页面
+      if (NewPage.selectedFolder) {
+        NewPage.init(NewPage.context, vscode.Uri.parse(NewPage.selectedFolder));
+        NewPage.way = NewPage.GenerateWay.PAGE;
+        NewPage.setPage(NewPage.context);
+        NewPage.getQuickPickItems()
+        NewPage.pick = page.name;
+        NewPage.pageName = page.name;
+        NewPage.showGenerateNameInput(page.description || '');
+      } else {
+        vscode.window.showInformationMessage('请选择生成页面目录！')
+      }
+    }
+  }
  
   // 通过配置设置页面参数
   public static setPageByConfig(config: string) {
@@ -52,8 +92,6 @@ export default class NewPage {
         label: key,
         description: `(${conf[key].category})`
       });
-      // if (conf[key].category === projectCategory) {
-      // }
     }
     NewPage.pageTemplateList = Object.assign(NewPage.pageTemplateList, conf);
     NewPage.pages = NewPage.pages.concat(pages);
@@ -123,7 +161,7 @@ export default class NewPage {
     }
     templatePick.buttons = [new TemplateButton({
       dark: vscode.Uri.file(context.asAbsolutePath('asset/dark/document.svg')),
-      light: vscode.Uri.file(context.asAbsolutePath('asset/dark/document.svg')),
+      light: vscode.Uri.file(context.asAbsolutePath('asset/light/document.svg')),
     }, '使用文档'), new TemplateButton({
       dark: vscode.Uri.file(context.asAbsolutePath('asset/dark/refresh.svg')),
       light: vscode.Uri.file(context.asAbsolutePath('asset/light/refresh.svg')),
@@ -201,6 +239,7 @@ export default class NewPage {
    * @param uri 
    */
   public async showComponentQuickPick(context: vscode.ExtensionContext, uri: vscode.Uri) {
+    NewPage.activeTextEditor = vscode.window.activeTextEditor
     // 1. 初始化，从配置文件获取页面列表
     NewPage.init(context, uri);
     NewPage.way = NewPage.GenerateWay.COMPONENT;
@@ -215,7 +254,7 @@ export default class NewPage {
     }
     templatePick.buttons = [new TemplateButton({
       dark: vscode.Uri.file(context.asAbsolutePath('asset/dark/document.svg')),
-      light: vscode.Uri.file(context.asAbsolutePath('asset/dark/document.svg')),
+      light: vscode.Uri.file(context.asAbsolutePath('asset/light/document.svg')),
     }, '使用文档'), new TemplateButton({
       dark: vscode.Uri.file(context.asAbsolutePath('asset/dark/refresh.svg')),
       light: vscode.Uri.file(context.asAbsolutePath('asset/light/refresh.svg')),
@@ -283,7 +322,7 @@ export default class NewPage {
    * @param page 
    */
   public static codeBlockFillVue(page: any) {
-    let editor: vscode.TextEditor | undefined = vscode.window.activeTextEditor;
+    let editor: vscode.TextEditor | undefined = NewPage.activeTextEditor;
     if (editor) {
       let templatePath = path.join(NewPage.context.extensionUri.path, NewPage.way === NewPage.GenerateWay.PAGE ? NewPage.templateRoot : NewPage.componentRoot, page.template + 'index.txt');
       try {
@@ -397,7 +436,7 @@ export default class NewPage {
    * @param page 
    */
   public static codeBlockFillMiniapp(page: any) {
-    let editor: vscode.TextEditor | undefined = vscode.window.activeTextEditor;
+    let editor: vscode.TextEditor | undefined = NewPage.activeTextEditor;
     if (editor) {
       let templatePath = path.join(NewPage.context.extensionUri.path, NewPage.way === NewPage.GenerateWay.PAGE ? NewPage.templateRoot : NewPage.componentRoot, page.template + 'index.txt');
       try {

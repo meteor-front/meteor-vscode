@@ -4,6 +4,7 @@ const execa = require('execa');
 const fs = require('fs');
 import * as data from '../utils/data';
 import { getHtmlForWebview } from '../utils/util';
+import NewPage from './newPage';
 
 /**
  * 创建工程面板
@@ -35,7 +36,7 @@ export default class UploadPanel {
 		const panel = vscode.window.createWebviewPanel(
 			UploadPanel.viewType,
 			'Meteor',
-      column || vscode.ViewColumn.One,
+      vscode.ViewColumn.Two,
 			{
 				// webview允许使用javascript
 				enableScripts: true,
@@ -70,6 +71,7 @@ export default class UploadPanel {
 		// Update the content based on view changes
 		this._panel.onDidChangeViewState(
 			e => {
+        NewPage.activeTextEditor = vscode.window.activeTextEditor
 				if (this._panel.visible) {
           if (!this.hasWebview) {
             this._update();
@@ -98,12 +100,30 @@ export default class UploadPanel {
 					case 'generatePage':
 						this.generatePage(message);
 						break;
+          case 'addPage':
+						this.addPage(message);
+						break;
+          case 'inPage':
+            this.inPage()
+            break;
 				}
 			},
 			null,
 			this._disposables
 		);
 	}
+  inPage() {
+    vscode.commands.executeCommand('copyFilePath').then((res) => {
+      vscode.env.clipboard.readText().then((folder: any) => {
+        NewPage.selectedFolder = /(\/.*\.\w*$|^\/webview-panel)/gi.test(folder) ? '' : folder
+      })
+    })
+  }
+  // 添加页面{
+  addPage(message: any) {
+    let page = JSON.parse(message.config.page)
+    NewPage.generatePage(page)
+  }
 	// 生成页面
 	generatePage(message: any) {
 		let root = vscode.workspace.rootPath;
