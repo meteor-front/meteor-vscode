@@ -103,10 +103,8 @@ export default class Completion {
                 apiUrlArr = [last];
               }
             }
-            if (postWay !== 'post') {
-              if (!(apiUrlArr[0] && apiUrlArr[0].toLowerCase().includes(postWay))) {
-                apiUrlArr.unshift(postWay);
-              }
+            if (!(apiUrlArr[0] && apiUrlArr[0].toLowerCase().includes(postWay))) {
+              apiUrlArr.unshift(postWay);
             }
             apiName = camelCase(apiUrlArr);
             if (type === 'api') {

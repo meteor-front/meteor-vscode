@@ -185,10 +185,9 @@ export default class SwaggerFactory {
     } else {
       apiUrlArr = [apiUrlArrPrev[apiUrlLen - 1]]
     }
-    if (postWay !== 'post') {
-      if (apiUrlArr[0] && !apiUrlArr[0].toLowerCase().includes(postWay)) {
-        apiUrlArr.unshift(postWay);
-      }
+    // 加上请求前缀
+    if (apiUrlArr[0] && !apiUrlArr[0].toLowerCase().includes(postWay)) {
+      apiUrlArr.unshift(postWay);
     }
     // 重名处理
     apiName = camelCase(apiUrlArr);

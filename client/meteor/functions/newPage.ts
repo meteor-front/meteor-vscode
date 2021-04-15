@@ -42,9 +42,9 @@ export default class NewPage {
         // 获取文件所在文件夹
         let uriPath = edior.document.uri.path
         if (uriPath.includes('.')) {
-          uriPath = uriPath.replace(/\/\w*.\w*$/gi, '')
+          uriPath = uriPath.replace(/[\/|\\]\w*.\w*$/gi, '')
         }
-        NewPage.init(NewPage.context, vscode.Uri.parse(uriPath));
+        NewPage.init(NewPage.context, vscode.Uri.file(uriPath));
         NewPage.way = NewPage.GenerateWay.COMPONENT;
         NewPage.setComponent(NewPage.context);
         NewPage.getQuickPickItems()
@@ -57,7 +57,7 @@ export default class NewPage {
     } else if (page.type === '1') {
       // 页面
       if (NewPage.selectedFolder) {
-        NewPage.init(NewPage.context, vscode.Uri.parse(NewPage.selectedFolder));
+        NewPage.init(NewPage.context, vscode.Uri.file(NewPage.selectedFolder));
         NewPage.way = NewPage.GenerateWay.PAGE;
         NewPage.setPage(NewPage.context);
         NewPage.getQuickPickItems()
@@ -326,6 +326,7 @@ export default class NewPage {
     if (editor) {
       let templatePath = path.join(NewPage.context.extensionUri.path, NewPage.way === NewPage.GenerateWay.PAGE ? NewPage.templateRoot : NewPage.componentRoot, page.template + 'index.txt');
       try {
+        templatePath = winRootPathHandle(templatePath)
         let template = fs.readFileSync(templatePath, 'utf-8');
         let templateArr = JSON.parse(template);
         let names: string[] = [];
@@ -719,6 +720,10 @@ ${space}},\n`;
   public static async generate() {
     //  1. 获取页面列表
     let pagesInfo = NewPage.pageTemplateList[NewPage.pick];
+    if (!pagesInfo) {
+      vscode.window.showInformationMessage('请先[同步](command:meteor.sync)')
+      return
+    }
     // 2. 读取相关页面，并替换为页面名称
     let pages: [any] = pagesInfo.pages;
     pages.forEach(page => {
