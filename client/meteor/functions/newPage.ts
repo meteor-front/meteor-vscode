@@ -370,17 +370,20 @@ export default class NewPage {
                         names.splice(names.indexOf(vueProp.name), 1);
                         let line = vueProp.kind === 5 ? vueProp.location.range._end._line - 2 : vueProp.location.range._end._line - 1
                         let code = '';
-                        if (vueProp.children.length > 0) {
-                          code += ',\n';
+                        // code存在才处理
+                        if (templateObj[vueProp.name]) {
+                          if (vueProp.children.length > 0) {
+                            code += ',\n';
+                          }
+                          code += templateObj[vueProp.name];
+                          insertList.push({
+                            position: {
+                              _line: line,
+                              _character: editor?.document.lineAt(line).text.length
+                            },
+                            code: code
+                          });
                         }
-                        code += templateObj[vueProp.name];
-                        insertList.push({
-                          position: {
-                            _line: line,
-                            _character: editor?.document.lineAt(line).text.length
-                          },
-                          code: code
-                        });
                       }
                     });
                   }

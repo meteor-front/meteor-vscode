@@ -113,9 +113,13 @@ export default class UploadPanel {
 		);
 	}
   inPage() {
-    vscode.commands.executeCommand('copyFilePath').then((res) => {
-      vscode.env.clipboard.readText().then((folder: any) => {
-        NewPage.selectedFolder = /(\/.*\.\w*$|webview-panel)/gi.test(folder) ? '' : folder
+    vscode.env.clipboard.readText().then((text: any) => {
+      let prevCopyText = text
+      vscode.commands.executeCommand('copyFilePath').then((res) => {
+        vscode.env.clipboard.readText().then((folder: any) => {
+          NewPage.selectedFolder = /(\/.*\.\w*$|webview-panel)/gi.test(folder) ? '' : folder
+          vscode.env.clipboard.writeText(prevCopyText)
+        })
       })
     })
   }
