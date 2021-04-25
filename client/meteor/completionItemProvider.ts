@@ -240,6 +240,13 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
     for (let i = 0; i < this.vueFiles.length; i++) {
       const vf : any = this.vueFiles[i];
       if (tag === vf.name) {
+        let name = vf.name.replace(/(-[a-z])/g, (_: any, c: string) => {
+          return c ? c.toUpperCase() : '';
+        }).replace(/-/gi, '');
+        // 不重复插入引入
+        if (editor.document.getText().includes(`import ${name}`)) {
+          return
+        }
         let countLine = editor.document.lineCount;
         // 找script位置
         while (!/^\s*<script.*>\s*$/.test(<string>editor.document.lineAt(line).text)) {
@@ -265,10 +272,6 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
             }
           }
         }
- 
-        let name = vf.name.replace(/(-[a-z])/g, (_: any, c: string) => {
-          return c ? c.toUpperCase() : '';
-        }).replace(/-/gi, '');
         let importString = `import ${name} from '${getRelativePath(editor.document.uri.path, path.join(this.workspaceRoot, vf.path))}'\n`;
         let importLine = line;
         if (line < countLine) {

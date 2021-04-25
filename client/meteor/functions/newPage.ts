@@ -391,13 +391,15 @@ export default class NewPage {
               } else if (oneLevelItem.name === 'style' && names.includes('style')) {
                 names.splice(names.indexOf('style'), 1);
                 let line = oneLevelItem.location.range._end._line - 1;
-                insertList.push({
-                  position: {
-                    _line: line,
-                    _character: editor?.document.lineAt(line).text.length
-                  },
-                  code: '\n' + templateObj['style']
-                });
+                if (templateObj['style']) {
+                  insertList.push({
+                    position: {
+                      _line: line,
+                      _character: editor?.document.lineAt(line).text.length
+                    },
+                    code: '\n' + templateObj['style']
+                  });
+                }
               }
             });
             names.forEach((name: string) => {
