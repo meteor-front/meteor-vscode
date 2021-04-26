@@ -605,7 +605,7 @@ ${this.meteor.tabSpace}}`;
     while(currentLine < count) {
       let text = editor.document.lineAt(currentLine).text
       if (new RegExp(`\\s*...mapActions\\(\\s*'\\s*\\w*\\s*'\\s*,\\s*\\[.*\\]\\s*\\)\\s*,\\s*`, 'gi').test(text)) {
-        if (new RegExp(`\\s*...mapActions\\(\\s*'\\s*${fileName}\\s*'\\s*,\\s*\\[.*\\]\\s*\\)\\s*,\\s*`, 'gi').test(text)) {
+        if (new RegExp(`\\s*...mapActions\\(\\s*'\\s*${fileName.replace(/(.*)\..*/, '$1')}\\s*'\\s*,\\s*\\[.*\\]\\s*\\)\\s*,\\s*`, 'gi').test(text)) {
           // 已导入文件，判断接口是否导入
           if (!new RegExp(`\\[.*${apiParams.name}.*\\]`, 'gi').test(text)) {
             insertList.push([new Position(currentLine, text.replace(/\s*\].*/gi, '').length), `, '${apiParams.name}' `])
