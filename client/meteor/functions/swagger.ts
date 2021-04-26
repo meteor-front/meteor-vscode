@@ -196,14 +196,14 @@ export default class SwaggerFactory {
       if (apiUrlLen > 2) {
         name = apiUrlArrPrev[apiUrlLen - 2]
         if (!/^{.*}$/gi.test(name)) {
-          let apiUrlArrFix = [name, ...apiUrlArr]
+          let apiUrlArrFix = apiUrlArr.splice(1, 0, name)
           apiName = camelCase(apiUrlArrFix);
         }
         if (apiNameList.indexOf(apiName) !== -1) {
           if (apiUrlLen > 3) {
             name = apiUrlArrPrev[apiUrlLen - 3]
             if (!/^{.*}$/gi.test(name)) {
-              let apiUrlArrFix = [name, ...apiUrlArr]
+              let apiUrlArrFix = apiUrlArr.splice(1, 0, name)
               apiName = camelCase(apiUrlArrFix);
             }
           }
@@ -211,7 +211,7 @@ export default class SwaggerFactory {
             if (apiUrlLen > 4) {
               name = apiUrlArrPrev[apiUrlLen - 4]
               if (!/^{.*}$/gi.test(name)) {
-                let apiUrlArrFix = [name, ...apiUrlArr]
+                let apiUrlArrFix = apiUrlArr.splice(1, 0, name)
                 apiName = camelCase(apiUrlArrFix);
               }
             }
