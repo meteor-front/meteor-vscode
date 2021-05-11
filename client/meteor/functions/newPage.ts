@@ -31,12 +31,35 @@ export default class NewPage {
   public static meteor: Meteor
   public static activeTextEditor: vscode.TextEditor | undefined;
   public static selectedFolder: string
+  public static priviousTextEditor: vscode.TextEditor | undefined
 
   // 生成页面
-  public static generatePage(page: any) {
+  public static generatePage(page: any, priviousTextEditor: vscode.TextEditor | undefined) {
+    NewPage.priviousTextEditor = priviousTextEditor
+    // 在线模式下，生成pages，不取本地
+    let obj: any = {};
+    obj[page.description.name] = {
+      category: page.category,
+      type: page.type,
+      block: page.block
+    };
+    let pages: any = [];
+    page.code.forEach((codeItem: any) => {
+      let dotPosition = codeItem.name.lastIndexOf('.');
+      pages.push({
+        template: page.id + '/' + codeItem.name,
+        type: codeItem.type,
+        fileName: codeItem.name.substr(0, dotPosition),
+        poster: codeItem.name.substr(dotPosition, codeItem.name.length),
+        onlineCode: codeItem.code,
+        position: codeItem.position
+      });
+    });
+    obj[page.description.name].pages = pages;
+
     if (page.type === '0') {
       // 组件
-      let edior: vscode.TextEditor | undefined = NewPage.activeTextEditor
+      let edior: vscode.TextEditor | undefined = NewPage.activeTextEditor || NewPage.priviousTextEditor
       if (edior) {
         // 生成组件
         // 获取文件所在文件夹
@@ -46,10 +69,11 @@ export default class NewPage {
         }
         NewPage.init(NewPage.context, vscode.Uri.file(uriPath));
         NewPage.way = NewPage.GenerateWay.COMPONENT;
-        NewPage.setComponent(NewPage.context);
-        NewPage.getQuickPickItems()
-        NewPage.pick = page.name;
-        NewPage.pageName = page.name;
+        // NewPage.setComponent(NewPage.context);
+        // NewPage.getQuickPickItems()
+        NewPage.pick = page.description.name;
+        NewPage.pageName = page.description.name;
+        NewPage.pageTemplateList = obj
         NewPage.generate();
       } else {
         vscode.window.showInformationMessage('请选择插入位置！')
@@ -61,8 +85,8 @@ export default class NewPage {
         NewPage.way = NewPage.GenerateWay.PAGE;
         NewPage.setPage(NewPage.context);
         NewPage.getQuickPickItems()
-        NewPage.pick = page.name;
-        NewPage.pageName = page.name;
+        NewPage.pick = page.description.name;
+        NewPage.pageName = page.description.name;
         NewPage.showGenerateNameInput(page.description || '');
       } else {
         vscode.window.showInformationMessage('请选择生成页面目录！')
@@ -233,6 +257,21 @@ export default class NewPage {
     }
   }
 
+  public async offlineGenerateComponent(context: vscode.ExtensionContext, uri: vscode.Uri, name: string) {
+    NewPage.activeTextEditor = vscode.window.activeTextEditor
+    // 1. 初始化，从配置文件获取页面列表
+    let uriPath = uri.path
+    if (uriPath.includes('.')) {
+      uriPath = uriPath.replace(/[\/|\\]\w*.\w*$/gi, '')
+    }
+    NewPage.init(context, vscode.Uri.file(uriPath));
+    NewPage.way = NewPage.GenerateWay.COMPONENT;
+    NewPage.setComponent(context);
+    NewPage.pageName = name;
+    NewPage.pick = name;
+    NewPage.generate();
+  }
+
   /**
    * 显示组件选择弹窗
    * @param context 
@@ -321,119 +360,147 @@ export default class NewPage {
    * vue代码块填充
    * @param page 
    */
-  public static codeBlockFillVue(page: any) {
-    let editor: vscode.TextEditor | undefined = NewPage.activeTextEditor;
+  public static codeBlockFillVue(pages: any []) {
+    let editor: vscode.TextEditor | undefined = NewPage.activeTextEditor || NewPage.priviousTextEditor;
     if (editor) {
-      let templatePath = path.join(NewPage.context.extensionUri.path, NewPage.way === NewPage.GenerateWay.PAGE ? NewPage.templateRoot : NewPage.componentRoot, page.template + 'index.txt');
-      try {
-        templatePath = winRootPathHandle(templatePath)
-        let template = fs.readFileSync(templatePath, 'utf-8');
+      // 合并代码块内容, 拼装规则为，func内容在slot-name来替换组件内容
+      let names: string[] = [];
+      let templateObj: any = {};
+      pages.forEach(page => {
+        let templatePath = ''
+        if (!page.onlineCode) {
+          templatePath = path.join(NewPage.context.extensionUri.path, NewPage.way === NewPage.GenerateWay.PAGE ? NewPage.templateRoot : NewPage.componentRoot, page.template + (page.position ? page.position + '.txt' : 'index.txt'));
+        }
+        let template = ''
+        // 在线代码存在
+        if (page.onlineCode) {
+          template = page.onlineCode
+        } else {
+          templatePath = winRootPathHandle(templatePath)
+          try {
+            template = fs.readFileSync(templatePath, 'utf-8');
+          } catch (error) {
+            console.log('error', error)
+          }
+        }
         let templateArr = JSON.parse(template);
-        let names: string[] = [];
-        let templateObj: any = {};
         for (let i = 0; i < templateArr.length; i++) {
           const tempateItem = templateArr[i];
-          names.push(tempateItem.name);
-          templateObj[tempateItem.name] = tempateItem.code;
+          if (names.indexOf(tempateItem.name) === -1) {
+            names.push(tempateItem.name);
+          }
+          if (templateObj[tempateItem.name]) {
+            if (page.type === 'func') {
+              templateObj[tempateItem.name] = templateObj[tempateItem.name].replace(new RegExp(`slot-${page.position}`), tempateItem.code)
+            } else {
+              templateObj[tempateItem.name] += tempateItem.code;
+            }
+          } else {
+            if (page.type === 'func') {
+              templateObj[tempateItem.name] = templateObj[tempateItem.name].replace(new RegExp(`slot-${page.position}`), tempateItem.code)
+            } else {
+              templateObj[tempateItem.name] = tempateItem.code;
+            }
+          }
         }
-        vscode.commands.executeCommand('vscode.executeDocumentSymbolProvider', editor.document.uri).then(async (symbols: any) => {
-          // 拼装插入内容位置、内容
-          let insertList: any[] = [];
-          if (symbols && symbols.length === 1) {
-            let doc = symbols[0];
-            let defaultLine = 0;
-            doc.children.forEach((oneLevelItem: any) => {
-              if (oneLevelItem.name === 'template' && names.includes('template')) {
-                names.splice(names.indexOf('template'), 1);
-                insertList.push({
-                  position: editor?.selection.active || oneLevelItem.location.range._end,
-                  code: templateObj['template']
-                });
-              } else if (oneLevelItem.name === 'script') {
-                if (names.includes('import')) {
-                  names.splice(names.indexOf('import'), 1);
-                  let line = oneLevelItem.location.range._start._line
-                  insertList.push({
-                    position: {
-                      _line: line,
-                      _character: editor?.document.lineAt(line).text.length
-                    },
-                    code: '\n' + templateObj['import']
-                  });
-                }
-                oneLevelItem.children.forEach((scriptChild: any) => {
-                  if (scriptChild.name === 'default') {
-                    defaultLine = scriptChild.location.range._start._line;
-                    // vue属性
-                    scriptChild.children.forEach((vueProp: any) => {
-                      if (names.includes(vueProp.name)) {
-                        names.splice(names.indexOf(vueProp.name), 1);
-                        let line = vueProp.kind === 5 ? vueProp.location.range._end._line - 2 : vueProp.location.range._end._line - 1
-                        let code = '';
-                        // code存在才处理
-                        if (templateObj[vueProp.name]) {
-                          if (vueProp.children.length > 0) {
-                            code += ',\n';
-                          }
-                          code += templateObj[vueProp.name];
-                          insertList.push({
-                            position: {
-                              _line: line,
-                              _character: editor?.document.lineAt(line).text.length
-                            },
-                            code: code
-                          });
-                        }
-                      }
-                    });
-                  }
-                });
-              } else if (oneLevelItem.name === 'style' && names.includes('style')) {
-                names.splice(names.indexOf('style'), 1);
-                let line = oneLevelItem.location.range._end._line - 1;
-                if (templateObj['style']) {
-                  insertList.push({
-                    position: {
-                      _line: line,
-                      _character: editor?.document.lineAt(line).text.length
-                    },
-                    code: '\n' + templateObj['style']
-                  });
-                }
-              }
-            });
-            names.forEach((name: string) => {
-              if (vuePropsDef.vue[name]) {
+      })
+
+      vscode.commands.executeCommand('vscode.executeDocumentSymbolProvider', editor.document.uri).then(async (symbols: any) => {
+        // 拼装插入内容位置、内容
+        let insertList: any[] = [];
+        if (symbols && symbols.length === 1) {
+          let doc = symbols[0];
+          let defaultLine = 0;
+          doc.children.forEach((oneLevelItem: any) => {
+            if (oneLevelItem.name === 'template' && names.includes('template')) {
+              names.splice(names.indexOf('template'), 1);
+              insertList.push({
+                position: editor?.selection.active || oneLevelItem.location.range._end,
+                code: templateObj['template']
+              });
+            } else if (oneLevelItem.name === 'script') {
+              if (names.includes('import')) {
+                names.splice(names.indexOf('import'), 1);
+                let line = oneLevelItem.location.range._start._line
                 insertList.push({
                   position: {
-                    _line: defaultLine,
-                    _character: editor?.document.lineAt(defaultLine).text.length
+                    _line: line,
+                    _character: editor?.document.lineAt(line).text.length
                   },
-                  code: '\n' + vuePropsDef.vue[name].replace(/##/gi, templateObj[name])
+                  code: '\n' + templateObj['import']
                 });
               }
-            });
-
-            await editor?.edit((editBuilder: any) => {
-              insertList.forEach((insert) => {
-                editBuilder.insert(new vscode.Position(insert.position._line, insert.position._character), insert.code);
+              oneLevelItem.children.forEach((scriptChild: any) => {
+                if (scriptChild.name === 'default') {
+                  defaultLine = scriptChild.location.range._start._line;
+                  // vue属性
+                  scriptChild.children.forEach((vueProp: any) => {
+                    if (names.includes(vueProp.name)) {
+                      names.splice(names.indexOf(vueProp.name), 1);
+                      let line = vueProp.kind === 5 ? vueProp.location.range._end._line - 2 : vueProp.location.range._end._line - 1
+                      let code = '';
+                      // code存在才处理
+                      if (templateObj[vueProp.name]) {
+                        if (vueProp.children.length > 0) {
+                          code += ',\n';
+                        }
+                        code += templateObj[vueProp.name];
+                        insertList.push({
+                          position: {
+                            _line: line,
+                            _character: editor?.document.lineAt(line).text.length
+                          },
+                          code: code
+                        });
+                      }
+                    }
+                  });
+                }
               });
+            } else if (oneLevelItem.name === 'style' && names.includes('style')) {
+              names.splice(names.indexOf('style'), 1);
+              let line = oneLevelItem.location.range._end._line - 1;
+              if (templateObj['style']) {
+                insertList.push({
+                  position: {
+                    _line: line,
+                    _character: editor?.document.lineAt(line).text.length
+                  },
+                  code: '\n' + templateObj['style']
+                });
+              }
+            }
+          });
+          names.forEach((name: string) => {
+            if (vuePropsDef.vue[name]) {
+              insertList.push({
+                position: {
+                  _line: defaultLine,
+                  _character: editor?.document.lineAt(defaultLine).text.length
+                },
+                code: '\n' + vuePropsDef.vue[name].replace(/##/gi, templateObj[name])
+              });
+            }
+          });
+          await editor?.edit((editBuilder: any) => {
+            insertList.forEach((insert) => {
+              editBuilder.insert(new vscode.Position(insert.position._line, insert.position._character), insert.code);
             });
-            setTimeout(() => {
-              vscode.commands.executeCommand('eslint.executeAutofix');
-            }, 300);
-          } else if (templateObj['template'] && editor?.selection.active) {
-            await editor?.edit((editBuilder: any) => {
-              editBuilder.insert(editor?.selection.active, templateObj['template']);
-            });
-            setTimeout(() => {
-              vscode.commands.executeCommand('eslint.executeAutofix');
-            }, 300);
-          }
-        });
-      } catch (error) {
-        
-      }
+          });
+        } else if (templateObj['template'] && editor?.selection.active) {
+          await editor?.edit((editBuilder: any) => {
+            editBuilder.insert(editor?.selection.active, templateObj['template']);
+          });
+        }
+      }).then(() => {
+        if (NewPage.priviousTextEditor) {
+          // 聚焦进入的页面
+          vscode.window.showTextDocument(NewPage.priviousTextEditor?.document, NewPage.priviousTextEditor.viewColumn)
+          setTimeout(() => {
+            vscode.commands.executeCommand('eslint.executeAutofix');
+          }, 100);
+        }
+      })
     }
   }
 
@@ -442,11 +509,21 @@ export default class NewPage {
    * @param page 
    */
   public static codeBlockFillMiniapp(page: any) {
-    let editor: vscode.TextEditor | undefined = NewPage.activeTextEditor;
+    let editor: vscode.TextEditor | undefined = NewPage.activeTextEditor || NewPage.priviousTextEditor;
     if (editor) {
-      let templatePath = path.join(NewPage.context.extensionUri.path, NewPage.way === NewPage.GenerateWay.PAGE ? NewPage.templateRoot : NewPage.componentRoot, page.template + 'index.txt');
+      let templatePath = ''
+      if (!page.onlineCode) {
+        templatePath = path.join(NewPage.context.extensionUri.path, NewPage.way === NewPage.GenerateWay.PAGE ? NewPage.templateRoot : NewPage.componentRoot, page.template + 'index.txt');
+      }
       try {
-        let template = fs.readFileSync(templatePath, 'utf-8');
+        let template = ''
+        // 在线代码存在
+        if (page.onlineCode) {
+          template = page.onlineCode
+        } else {
+          templatePath = winRootPathHandle(templatePath)
+          template = fs.readFileSync(templatePath, 'utf-8');
+        }
         let templateArr = JSON.parse(template);
         let names: string[] = [];
         let templateObj: any = {};
@@ -705,14 +782,14 @@ ${space}},\n`;
    * 代码块填充
    * @param page 
    */
-  public static codeBlockFill(page: any, category: string) {
+  public static codeBlockFill(pages: any[], category: string) {
     // 规定所有文件都取自 index.txt
     switch (category) {
       case 'vue':
-        NewPage.codeBlockFillVue(page);
+        NewPage.codeBlockFillVue(pages);
         break;
       case 'miniapp':
-        NewPage.codeBlockFillMiniapp(page);
+        NewPage.codeBlockFillMiniapp(pages);
         break;
     
       default:
@@ -726,20 +803,21 @@ ${space}},\n`;
     //  1. 获取页面列表
     let pagesInfo = NewPage.pageTemplateList[NewPage.pick];
     if (!pagesInfo) {
-      vscode.window.showInformationMessage('请先[同步](command:meteor.sync)')
+      // vscode.window.showInformationMessage('请先[同步](command:meteor.sync)')
       return
     }
     // 2. 读取相关页面，并替换为页面名称
     let pages: [any] = pagesInfo.pages;
+    let codeBlocks: any[] = []
     pages.forEach(page => {
       let pagePath = '';
       switch (page.type) {
         case 'page':
         case 'component':
-          if (pagesInfo.block === 1) {
-            // 代码块
-            NewPage.codeBlockFill(page, pagesInfo.category);
-          } else {
+        case 'func':
+        case 'funcFile':
+          // 通过是否存在文件名来判断是不是代码块
+          if (page.fileName) {
             // 名称组装
             let name = NewPage.pageName + page.fileName[0].toUpperCase() + page.fileName.substr(1, page.fileName.length);
             if (pagesInfo.category === 'miniapp') {
@@ -757,9 +835,18 @@ ${space}},\n`;
             try {
               pagePath = winRootPathHandle(pagePath);
               fs.statSync(pagePath);
+              // vscode.window.showInformationMessage(`文件${pagePath}已存在`)
             } catch (error) {
-              NewPage.fileGenerate(pagePath, path.join(NewPage.context.extensionUri.path, NewPage.way === NewPage.GenerateWay.PAGE ? NewPage.templateRoot : NewPage.componentRoot, page.template), page.type, {});
+              if (page.onlineCode) {
+                NewPage.fileWrite(pagePath, page.onlineCode)
+              } else {
+                // 离线模式
+                NewPage.fileGenerate(pagePath, path.join(NewPage.context.extensionUri.path, NewPage.way === NewPage.GenerateWay.PAGE ? NewPage.templateRoot : NewPage.componentRoot, page.template), page.type, {});
+              }
             }
+          } else {
+            // 代码块
+            codeBlocks.push(page)
           }
           break;
         case 'store':
@@ -786,6 +873,10 @@ ${space}},\n`;
           break;
       }
     });
+    // 代码块统一处理
+    if (codeBlocks.length > 0) {
+      NewPage.codeBlockFill(codeBlocks, pagesInfo.category);
+    }
   }
   // 设置工程根路径
   public static setProjectRoot() {
@@ -797,8 +888,17 @@ ${space}},\n`;
       });
     }
   }
+  // 内容生成
+  public static fileWrite(pagePath: string, str: string) {
+    try {
+      fs.writeFileSync(pagePath, str);
+    } catch (error) {
+      
+    }
+  }
   // 文件生成
   public static async fileGenerate(pagePath: string, template: string, type: string, options: any) {
+    console.log('template', template, pagePath)
     // 读取模板文件，替换，生成
     template = winRootPathHandle(template);
     let tempStr = fs.readFileSync(template, 'utf-8');

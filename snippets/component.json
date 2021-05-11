@@ -1,0 +1,11 @@
+{
+  "mdemo": {
+    "prefix": "mdemo",
+    "body": [
+      "new Vue({",
+      "\t$1",
+      "})"
+    ],
+    "description": "new Vue()"
+  }
+}

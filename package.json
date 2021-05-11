@@ -64,7 +64,8 @@
     "onCommand:meteor.upload",
     "onCommand:meteor.newProject",
     "onCommand:meteor.newComponent",
-    "onCommand:meteor.api"
+    "onCommand:meteor.api",
+    "onCommand:meteor.componentCompetion"
   ],
   "main": "./dist/meteorMain.js",
   "contributes": {
@@ -120,6 +121,10 @@
       {
         "command": "meteor.functionCompletion",
         "title": "meteor: functionCompletion"
+      },
+      {
+        "command": "meteor.componentCompetion",
+        "title": "meteor: componentCompetion"
       }
     ],
     "keybindings": [

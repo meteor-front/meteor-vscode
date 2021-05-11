@@ -2,7 +2,6 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 const execa = require('execa');
 const fs = require('fs');
-import * as data from '../utils/data';
 import { getHtmlForWebview } from '../utils/util';
 import NewPage from './newPage';
 
@@ -21,6 +20,7 @@ export default class UploadPanel {
 	private readonly _panel: vscode.WebviewPanel;
 	private readonly _extensionPath: string;
 	private _disposables: vscode.Disposable[] = [];
+  private priviousTextEditor: vscode.TextEditor | undefined
 
 	public static createOrShow(extensionPath: string, activeTab: string) {
 		const column = vscode.window.activeTextEditor
@@ -113,6 +113,9 @@ export default class UploadPanel {
 		);
 	}
   inPage() {
+    if (vscode.window.activeTextEditor) {
+      this.priviousTextEditor = vscode.window.activeTextEditor
+    }
     vscode.env.clipboard.readText().then((text: any) => {
       let prevCopyText = text
       vscode.commands.executeCommand('copyFilePath').then((res) => {
@@ -125,8 +128,7 @@ export default class UploadPanel {
   }
   // 添加页面{
   addPage(message: any) {
-    let page = JSON.parse(message.config.page)
-    NewPage.generatePage(page)
+    NewPage.generatePage(message.config.page, this.priviousTextEditor)
   }
 	// 生成页面
 	generatePage(message: any) {

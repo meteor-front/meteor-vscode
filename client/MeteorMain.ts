@@ -30,6 +30,7 @@ export function activate(context: vscode.ExtensionContext) {
   // 为标签、属性提示提供自动完成功能, 关闭标签功能
   vscode.languages.registerCompletionItemProvider(['vue', 'javascript', 'html', 'wxml'], meteor.completionItemProvider, '' ,':', '<', '"', "'", '/', '@', '(', '>', '{');
   vscode.languages.registerCompletionItemProvider(['vue', 'javascript', 'html', 'wxml'], meteor.swaggerCompletionItemProvider, '');
+  vscode.languages.registerCompletionItemProvider(['vue', 'javascript', 'html', 'wxml'], meteor.meteorCompletionItemProvider, 'm');
   // 函数补全函数
   vscode.commands.registerCommand('meteor.functionCompletion', () => {
     let editor = vscode.window.activeTextEditor;
@@ -112,6 +113,10 @@ export function activate(context: vscode.ExtensionContext) {
     meteor.completionItemProvider.setSwagger(params.swagger)
     meteor.swagger.apiGenerateFileExtra(params)
     meteor.swagger.generateSingleApi(`[${params.postWay}] ${params.apiUrl}`)
+  })
+  // 组件完成
+  vscode.commands.registerCommand('meteor.componentCompetion', (component) => {
+    meteor.newPage.offlineGenerateComponent(context, component.uri, component.name)
   })
 
   // 到达定义函数

@@ -1,6 +1,7 @@
 import { ExtensionContext, window, ProgressLocation, Position, Selection, Range, TextEditorRevealType } from 'vscode'
 import axios, { AxiosInstance } from 'axios';
 import MeteorCompletionItemProvider from './completionItemProvider';
+import MeteorFuncCompletionItemProvider from './meteorCompletionItemProvider';
 import SwaggerCompletionItemProvider from './swaggerCompletionItemProvider';
 import Block from './block';
 import BackSpace from './functions/backSpace'
@@ -19,6 +20,7 @@ export default class Meteor {
   // 完成项提供Provider
   public completionItemProvider: MeteorCompletionItemProvider
   public swaggerCompletionItemProvider: SwaggerCompletionItemProvider
+  public meteorCompletionItemProvider: MeteorFuncCompletionItemProvider
   public block: Block
   public backSpace: BackSpace
   public fetch: AxiosInstance
@@ -36,6 +38,7 @@ export default class Meteor {
     this.swagger = new Swagger(this)
     this.completionItemProvider = new MeteorCompletionItemProvider(this.config, this)
     this.swaggerCompletionItemProvider = new SwaggerCompletionItemProvider(this)
+    this.meteorCompletionItemProvider = new MeteorFuncCompletionItemProvider(this)
     this.block = new Block()
     this.backSpace = new BackSpace()
     NewPage.meteor = this
@@ -99,7 +102,8 @@ export default class Meteor {
               template: item.id + '/' + codeItem.name,
               type: codeItem.type,
               fileName: codeItem.name.substr(0, dotPosition),
-              poster: codeItem.name.substr(dotPosition, codeItem.name.length)
+              poster: codeItem.name.substr(dotPosition, codeItem.name.length),
+              position: codeItem.position
             });
             files.push({
               pageId: item.id,
@@ -139,7 +143,8 @@ export default class Meteor {
           } catch (error) {
             fs.mkdirSync(filePath);
           }
-          let filePathName = path.join(filePath, file.name || 'index.txt');
+          // position为代码块名称
+          let filePathName = path.join(filePath, file.name || (file.position ? (file.position + '.txt') : 'index.txt'));
           filePathName = winRootPathHandle(filePathName);
           fs.writeFileSync(filePathName, file.code);
           current++;
