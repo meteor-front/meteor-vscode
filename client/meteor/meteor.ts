@@ -1,4 +1,4 @@
-import { ExtensionContext, window, ProgressLocation, Position, Selection, Range, TextEditorRevealType } from 'vscode'
+import { ExtensionContext, window, ProgressLocation, Position, Selection, Range, TextEditorRevealType, workspace } from 'vscode'
 import axios, { AxiosInstance } from 'axios';
 import MeteorCompletionItemProvider from './completionItemProvider';
 import MeteorFuncCompletionItemProvider from './meteorCompletionItemProvider';
@@ -43,6 +43,7 @@ export default class Meteor {
     this.backSpace = new BackSpace()
     NewPage.meteor = this
     NewPage.context = context
+    NewPage.meteorConfig = workspace.getConfiguration('meteor');
     this.newPage = new NewPage()
   }
 

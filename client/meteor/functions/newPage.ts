@@ -144,7 +144,6 @@ export default class NewPage {
     }
     // 本地页面配置信息
     const config = vscode.workspace.getConfiguration('meteor');
-    NewPage.meteorConfig = config;
     if (config.rootPathLocalPage) {
       let localPageConfig = path.join(config.rootPathLocalPage, 'page.json');
       try {
@@ -818,19 +817,33 @@ ${space}},\n`;
         case 'funcFile':
           // 通过是否存在文件名来判断是不是代码块
           if (page.fileName) {
-            // 名称组装
-            let name = NewPage.pageName + page.fileName[0].toUpperCase() + page.fileName.substr(1, page.fileName.length);
-            if (pagesInfo.category === 'miniapp') {
-              name = NewPage.pageName;
-            }
-            if (NewPage.noSelectFolder) {
-              if (page.type === 'page') {
-                pagePath = path.join(NewPage.uri.path, NewPage.meteorConfig.rootPathPage, name + page.poster);
+            // 页面
+            if (page.type === 'page') {
+              // 名称组装
+              let name = NewPage.pageName + page.fileName[0].toUpperCase() + page.fileName.substr(1, page.fileName.length);
+              if (pagesInfo.category === 'miniapp') {
+                name = NewPage.pageName;
+              }
+              if (NewPage.noSelectFolder) {
+                if (page.type === 'page') {
+                  pagePath = path.join(NewPage.uri.path, NewPage.meteorConfig.rootPathPage, name + page.poster);
+                } else {
+                  pagePath = path.join(NewPage.uri.path, NewPage.meteorConfig.rootPathComponent, name + page.poster);
+                }
               } else {
-                pagePath = path.join(NewPage.uri.path, NewPage.meteorConfig.rootPathComponent, name + page.poster);
+                pagePath = path.join(NewPage.uri.path, name + page.poster);
               }
             } else {
-              pagePath = path.join(NewPage.uri.path, name + page.poster);
+              // 组件
+              let componentDir = path.join(NewPage.projectRoot, NewPage.meteorConfig.rootPathComponent, NewPage.pick)
+              // 创建组件目录
+              try {
+                componentDir = winRootPathHandle(componentDir);
+                fs.statSync(componentDir);
+              } catch (error) {
+                fs.mkdirSync(componentDir)
+              }
+              pagePath = path.join(NewPage.projectRoot, NewPage.meteorConfig.rootPathComponent, NewPage.pick, page.fileName + page.poster)
             }
             try {
               pagePath = winRootPathHandle(pagePath);
@@ -898,7 +911,6 @@ ${space}},\n`;
   }
   // 文件生成
   public static async fileGenerate(pagePath: string, template: string, type: string, options: any) {
-    console.log('template', template, pagePath)
     // 读取模板文件，替换，生成
     template = winRootPathHandle(template);
     let tempStr = fs.readFileSync(template, 'utf-8');
