@@ -2,6 +2,7 @@ import { CompletionItemProvider, TextDocument, Position, CancellationToken, Prov
 import Meteor from './meteor'
 import * as path from 'path'
 import * as fs from 'fs'
+import { winRootPathHandle } from './utils/util'
 
 // meteor组件提示
 export default class MeteorFuncCompletionItemProvider implements CompletionItemProvider {
@@ -15,7 +16,8 @@ export default class MeteorFuncCompletionItemProvider implements CompletionItemP
       // 组件
       let suggestions: any [] = []
       if (!this.meteorComponents) {
-        const componentPath = path.join(this.meteor.context.extensionUri.path, 'asset/component/component.json')
+        let componentPath = path.join(this.meteor.context.extensionUri.path, 'asset/component/component.json')
+        componentPath = winRootPathHandle(componentPath)
         const componentString = fs.readFileSync(componentPath, 'utf-8')
         this.meteorComponents = JSON.parse(componentString)
       }
