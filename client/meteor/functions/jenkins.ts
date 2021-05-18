@@ -1,27 +1,21 @@
 import { window, QuickInputButton, Uri, QuickPickItem, ProgressLocation } from 'vscode'
 import Meteor from '../meteor'
 import { getWorkspaceRoot, open } from '../utils/util'
+import JenkinsPanel from './jenkinsConfig'
 const axios = require('axios');
 
 export default class Jenkins {
   private meteor: Meteor
   // 默认环境选项
   private defaultItems: QuickPickItem[] = [{
-    label: '开发环境',
-    description: '分支[develop]'
+    label: 'develop'
   }, {
-    label: '测试环境',
-    description: '分支[develop]'
-  }, {
-    label: '预上线环境',
-    description: '分支[master]'
-  }, {
-    label: '上线环境',
-    description: '分支[master]'
+    label: 'master'
   }]
   private projectName: string = ''
   private url: string = ''
   private token: string = ''
+  private job: string = ''
 
   constructor(meteor: Meteor) {
     this.meteor = meteor
@@ -29,9 +23,37 @@ export default class Jenkins {
 
   init() {
     this.projectName = getWorkspaceRoot('').replace(/.*[\/\\](.*)$/gi, '$1')
+    this.job = this.projectName
+    // 获取配置信息
+    let config = this.meteor.config.get('jenkinsConfig')
+    this.url = this.meteor.config.get('jenkinsUrl')
+    this.token = this.meteor.config.get('jenkinsToken')
+    let items: any[] = []
+    config = config[this.projectName]
+    if (config) {
+      config = JSON.parse(config)
+      this.job = config.job
+      const branches = config.branches
+      branches.forEach((branch: any) => {
+        items.push({
+          label: branch.name
+        })
+      });
+    } else {
+      items = this.defaultItems
+      config = {}
+      config.branches = [{
+        id: '1',
+        name: 'develop'
+      }, {
+        id: '2',
+        name: 'master'
+      }]
+    }
+
     const quickPick = window.createQuickPick()
-    quickPick.title = `Jenkins: 打包生成hub镜像 [Job: ${this.projectName}]`
-    quickPick.placeholder = '选择打包环境'
+    quickPick.title = `Jenkins: 打包生成hub镜像 [Job: ${this.job}]`
+    quickPick.placeholder = '选择打包分支'
     // 操作按钮
     class Button implements QuickInputButton {
       constructor(public iconPath: { light: Uri; dark: Uri; }, public tooltip: string) { }
@@ -46,22 +68,11 @@ export default class Jenkins {
       light: Uri.file(this.meteor.context.asAbsolutePath('asset/light/setting.svg')),
       dark: Uri.file(this.meteor.context.asAbsolutePath('asset/dark/setting.svg')),
     }, '设置')]
-    // 获取配置信息
-    let config = this.meteor.config.get('jenkinsConfig')
-    this.url = this.meteor.config.get('jenkinsUrl')
-    this.token = this.meteor.config.get('jenkinsToken')
-    let items = []
-    config = config[this.projectName]
-    if (config) {
-      items = JSON.parse(config)
-    } else {
-      items = this.defaultItems
-    }
     quickPick.items = items
     // 选中选项
     quickPick.onDidChangeSelection((selection) => {
-      if (selection[0] && selection[0].description) {
-        this.buildJob(selection[0].description.replace(/分支\[(.*)\]/gi, '$1'))
+      if (selection[0] && selection[0].label) {
+        this.buildJob(selection[0].label)
       }
       quickPick.hide()
     })
@@ -75,7 +86,13 @@ export default class Jenkins {
           open(this.url)
           break;
         case '设置':
-          
+          JenkinsPanel.createOrShow(this.meteor.context.extensionPath, {
+            projectName: this.projectName,
+            url: config.url || this.url,
+            token: config.token || this.token,
+            job: config.job || this.projectName,
+            branches: config.branches
+          })
           break;
       
         default:
@@ -91,10 +108,10 @@ export default class Jenkins {
   // jenkins job编译
   public async buildJob(branch: string) {
     try {
-      const versionUrl = `${this.url}/job/${this.projectName}/lastSuccessfulBuild/buildNumber`
+      const versionUrl = `${this.url}/job/${this.job}/lastSuccessfulBuild/buildNumber`
       let res = await axios.get(versionUrl)
       let oldVersion = res.data
-      await axios.get(`${this.url}/job/${this.projectName}/buildWithParameters?token=${this.token}&BRANCH_NAME=${branch}`)
+      await axios.get(`${this.url}/job/${this.job}/buildWithParameters?token=${this.token}&BRANCH_NAME=${branch}`)
 
       let retResolve: any = null
       window.withProgress({
@@ -113,8 +130,8 @@ export default class Jenkins {
               clearInterval(s)
               retResolve('')
               // 通过日志获取hub地址
-              axios.get(`${this.url}/job/${this.projectName}/${version}/console`).then((res: any) => {
-                const reg = new RegExp(`\\s[\\w.\\/]*\\/${this.projectName}:${version}\\s`, 'gi')
+              axios.get(`${this.url}/job/${this.job}/${version}/console`).then((res: any) => {
+                const reg = new RegExp(`\\s[\\w.\\/]*\\/${this.job}:${version}\\s`, 'gi')
                 let ret: any = res.data.match(reg)
                 if (ret) {
                   window.showInformationMessage(`最新镜像版本：${ret[0]}`)
