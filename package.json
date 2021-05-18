@@ -59,6 +59,7 @@
     "onCommand:meteor.deleteComplete",
     "onCommand:meteor.openOfficial",
     "onCommand:meteor.swagger",
+    "onCommand:meteor.jenkins",
     "onCommand:meteor.newPage",
     "onCommand:meteor.sync",
     "onCommand:meteor.upload",
@@ -125,6 +126,10 @@
       {
         "command": "meteor.componentCompetion",
         "title": "meteor: componentCompetion"
+      },
+      {
+        "command": "meteor.jenkins",
+        "title": "meteor.jenkins"
       }
     ],
     "keybindings": [
@@ -267,6 +272,18 @@
         "meteor.user": {
           "type": "string",
           "default": ""
+        },
+        "meteor.jenkinsUrl": {
+          "type": "string",
+          "default": "http://jenkins.cs2025.com/"
+        },
+        "meteor.jenkinsToken": {
+          "type": "string",
+          "default": "zlst8888"
+        },
+        "meteor.jenkinsConfig": {
+          "type": "object",
+          "default": {}
         }
       }
     }
@@ -314,6 +331,7 @@
     "opn": "^6.0.0",
     "param-case": "^3.0.4",
     "prettier": "^2.2.1",
-    "pretty": "^2.0.0"
+    "pretty": "^2.0.0",
+    "superagent": "^6.1.0"
   }
 }

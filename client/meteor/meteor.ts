@@ -11,6 +11,7 @@ import NewPage from './functions/newPage'
 import * as path from 'path'
 import * as fs from 'fs'
 import Config from './config'
+import Jenkins from './functions/jenkins'
 
 export default class Meteor {
   // vscode上下文
@@ -25,6 +26,7 @@ export default class Meteor {
   public backSpace: BackSpace
   public fetch: AxiosInstance
   public swagger: Swagger
+  public jenkins: Jenkins
   public newPage: NewPage
   public tabSpace: string = '  '
   constructor(context: ExtensionContext) {
@@ -45,6 +47,7 @@ export default class Meteor {
     NewPage.context = context
     NewPage.meteorConfig = workspace.getConfiguration('meteor');
     this.newPage = new NewPage()
+    this.jenkins = new Jenkins(this)
   }
 
   /**

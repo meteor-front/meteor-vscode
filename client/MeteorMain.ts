@@ -60,12 +60,23 @@ export function activate(context: vscode.ExtensionContext) {
 	vscode.commands.registerCommand(statusCommandId, async () => {
 		meteor.swagger.generate(false, false, false)
 	});
+  // jenkins生成镜像
+  const statusJenkinsCommandId = 'meteor.jenkins'
+  vscode.commands.registerCommand(statusJenkinsCommandId, async () => {
+    meteor.jenkins.init()
+  })
   // 状态栏
   let statusBarItem: vscode.StatusBarItem;
   statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 9999);
 	statusBarItem.command = statusCommandId;
   statusBarItem.text = 'Swagger'
   statusBarItem.show()
+  // jenkins 状态条
+  let statusJenkinsBarItem: vscode.StatusBarItem;
+  statusJenkinsBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 9999);
+	statusJenkinsBarItem.command = statusJenkinsCommandId;
+  statusJenkinsBarItem.text = 'Jenkins'
+  statusJenkinsBarItem.show()
   // 页面生成
 	vscode.commands.registerCommand('meteor.newPage', (uri) => {
 		meteor.newPage.showQuickPick(context, uri)
