@@ -1164,7 +1164,7 @@ ${space}},\n`;
   public static apiStoreGenerate(apiName: string, apiPath: string) {
     let reqData = '(data)'
     if (/^[get|post|delete|put|patch].*by(.*)/gi.test(apiName)) {
-      let by = apiName.replace(/^[delete|put].*by(.*)/gi, '$1')
+      let by = apiName.replace(/^[get|post|delete|put|patch].*by(.*)/gi, '$1')
       reqData = `(data.${by[0].toLowerCase() + by.substr(1, by.length)}, data)`
     }
 let actions = `async ${apiName}({ commit }, data) {
