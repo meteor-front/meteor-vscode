@@ -1,5 +1,5 @@
 import { window, workspace,  Uri, Position, QuickInputButton, QuickPickItem, TextEditorEdit } from 'vscode'
-import { getWorkspaceRoot, winRootPathHandle, getRelativePath } from '../utils/util'
+import { getWorkspaceRoot, winRootPathHandle, getRelativePath, open } from '../utils/util'
 import * as path from 'path';
 import * as fs from 'fs'
 const camelCase = require('camelcase');
@@ -110,11 +110,14 @@ export default class SwaggerFactory {
           constructor(public iconPath: { light: Uri; dark: Uri; }, public tooltip: string) { }
         }
         templatePick.buttons = [new TemplateButton({
+          dark: Uri.file(this.meteor.context.asAbsolutePath('asset/dark/web.svg')),
+          light: Uri.file(this.meteor.context.asAbsolutePath('asset/light/web.svg')),
+        }, '打开Swagger地址'), new TemplateButton({
           dark: Uri.file(this.meteor.context.asAbsolutePath('asset/dark/replace.svg')),
           light: Uri.file(this.meteor.context.asAbsolutePath('asset/light/replace.svg')),
         }, '替换Swagger地址'), new TemplateButton({
           dark: Uri.file(this.meteor.context.asAbsolutePath('asset/dark/all.svg')),
-          light: Uri.file(this.meteor.context.asAbsolutePath('asset/dark/all.svg')),
+          light: Uri.file(this.meteor.context.asAbsolutePath('asset/light/all.svg')),
         }, '生成全部接口')];
         templatePick.items = items;
         templatePick.onDidChangeSelection(selection => {
@@ -126,6 +129,11 @@ export default class SwaggerFactory {
         });
         templatePick.onDidTriggerButton(item => {
           switch (item.tooltip) {
+            case '打开Swagger地址':
+              let swaggerUrlConfig: any = this.meteor.config.get('swaggerUrl') || {};
+              let url = swaggerUrlConfig[this.projectName] || ''
+              open(url)
+              break;
             case '替换Swagger地址':
               this.generate(false, false, true)
               break;

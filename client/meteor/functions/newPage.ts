@@ -1162,8 +1162,13 @@ ${space}},\n`;
   }
   // 生成api store内容
   public static apiStoreGenerate(apiName: string, apiPath: string) {
+    let reqData = ''
+    if (/^[delete|put].*by(.*)/gi.test(apiName)) {
+      let by = apiName.replace(/^[delete|put].*by(.*)/gi, '$1')
+      reqData = `(data.${by[0].toLowerCase() + by.substr(1, by.length)}, data)`
+    }
 let actions = `async ${apiName}({ commit }, data) {
-    const res = await ${apiName}(data)
+    const res = await ${apiName}${reqData}
     commit('${apiName}', res.data)
     return res.data
   }`; 

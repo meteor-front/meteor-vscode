@@ -18,6 +18,10 @@ export default class SwaggerCompletionItemProvider implements CompletionItemProv
   }
 
   provideCompletionItems(document: TextDocument, position: Position, token: CancellationToken): ProviderResult<CompletionItem[] | CompletionList> {
+    // 该行为空，才触发
+    if (!/^[\w\s]*$/gi.test(document.lineAt(position.line).text.trim())) {
+      return []
+    }
     if (this.completions.length === 0) {
       this.workspaceRoot = getWorkspaceRoot(document.uri.path)
       this.tabSpace = setTabSpace()

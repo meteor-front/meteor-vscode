@@ -12,6 +12,10 @@ export default class MeteorFuncCompletionItemProvider implements CompletionItemP
     this.meteor = meteor
   }
   provideCompletionItems(document: TextDocument, position: Position, token: CancellationToken): ProviderResult<CompletionItem[] | CompletionList> {
+    // 当最前面为"时，不提示
+    if (document.lineAt(position.line).text[position.character - 1] === '"') {
+      return []
+    }
     try {
       // 组件
       let suggestions: any [] = []
