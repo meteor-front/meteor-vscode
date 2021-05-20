@@ -59,12 +59,15 @@ export default class Jenkins {
       constructor(public iconPath: { light: Uri; dark: Uri; }, public tooltip: string) { }
     }
     quickPick.buttons = [new Button({
-      light: Uri.file(this.meteor.context.asAbsolutePath('asset/light/document.svg')),
-      dark: Uri.file(this.meteor.context.asAbsolutePath('asset/dark/document.svg'))
-    }, '使用说明'), new Button({
       light: Uri.file(this.meteor.context.asAbsolutePath('asset/light/web.svg')),
       dark: Uri.file(this.meteor.context.asAbsolutePath('asset/dark/web.svg')),
     }, 'jenkins地址'), new Button({
+      light: Uri.file(this.meteor.context.asAbsolutePath('asset/light/publish.svg')),
+      dark: Uri.file(this.meteor.context.asAbsolutePath('asset/dark/publish.svg')),
+    }, '获取当前版本'), new Button({
+      light: Uri.file(this.meteor.context.asAbsolutePath('asset/light/document.svg')),
+      dark: Uri.file(this.meteor.context.asAbsolutePath('asset/dark/document.svg'))
+    }, '使用说明'), new Button({
       light: Uri.file(this.meteor.context.asAbsolutePath('asset/light/setting.svg')),
       dark: Uri.file(this.meteor.context.asAbsolutePath('asset/dark/setting.svg')),
     }, '设置')]
@@ -92,6 +95,20 @@ export default class Jenkins {
             token: config.token || this.token,
             job: config.job || this.projectName,
             branches: config.branches
+          })
+          break;
+        case '获取当前版本':
+          axios.get(`${this.url}/job/${this.job}/lastSuccessfulBuild/buildNumber`).then((res: any) => {
+            const version = res.data
+            if (version) {
+              axios.get(`${this.url}/job/${this.job}/${version}/console`).then((res: any) => {
+                const reg = new RegExp(`\\s[\\w.\\/]*\\/${this.job}:${version}\\s`, 'gi')
+                let ret: any = res.data.match(reg)
+                if (ret) {
+                  window.showInformationMessage(`当前镜像版本：${ret[0]}`)
+                }
+              })
+            }
           })
           break;
       

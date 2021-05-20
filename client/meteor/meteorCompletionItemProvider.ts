@@ -13,7 +13,7 @@ export default class MeteorFuncCompletionItemProvider implements CompletionItemP
   }
   provideCompletionItems(document: TextDocument, position: Position, token: CancellationToken): ProviderResult<CompletionItem[] | CompletionList> {
     // 当最前面为"时，不提示
-    if (document.lineAt(position.line).text[position.character - 1] === '"') {
+    if (document.lineAt(position.line).text[position.character - 1] !== 'm') {
       return []
     }
     try {

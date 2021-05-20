@@ -4,7 +4,7 @@
   "description": "every thing for speed",
   "author": "shenjiaolong",
   "icon": "asset/logo.png",
-  "version": "3.4.12",
+  "version": "3.5.0",
   "publisher": "shenjiaolong",
   "scripts": {
     "postinstall": "run-s install:*",
@@ -60,6 +60,7 @@
     "onCommand:meteor.openOfficial",
     "onCommand:meteor.swagger",
     "onCommand:meteor.jenkins",
+    "onCommand:meteor.cloud",
     "onCommand:meteor.newPage",
     "onCommand:meteor.sync",
     "onCommand:meteor.upload",
@@ -130,6 +131,10 @@
       {
         "command": "meteor.jenkins",
         "title": "meteor.jenkins"
+      },
+      {
+        "command": "meteor.cloud",
+        "title": "meteor.cloud"
       }
     ],
     "keybindings": [
@@ -284,6 +289,26 @@
         "meteor.jenkinsConfig": {
           "type": "object",
           "default": {}
+        },
+        "meteor.cloudUrl": {
+          "type": "string",
+          "default": "http://cloud.cs2025.com"
+        },
+        "meteor.cloudUsername": {
+          "type": "string",
+          "default": ""
+        },
+        "meteor.cloudPassword": {
+          "type": "string",
+          "default": ""
+        },
+        "meteor.cloudConfig": {
+          "type": "object",
+          "default": {}
+        },
+        "meteor.cloudConfigUrl": {
+          "type": "string",
+          "default": "config"
         }
       }
     }

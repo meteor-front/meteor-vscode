@@ -28,7 +28,7 @@ export function activate(context: vscode.ExtensionContext) {
   const meteor = new Meteor(context)
   
   // 为标签、属性提示提供自动完成功能, 关闭标签功能
-  vscode.languages.registerCompletionItemProvider(['vue', 'javascript', 'html', 'wxml'], meteor.completionItemProvider, '' ,':', '<', '"', "'", '/', '@', '(', '>', '{');
+  vscode.languages.registerCompletionItemProvider(['vue', 'javascript', 'html', 'wxml'], meteor.completionItemProvider, '', ':', '<', '"', "'", '/', '@', '(', '>', '{');
   vscode.languages.registerCompletionItemProvider(['vue', 'javascript', 'html', 'wxml'], meteor.meteorCompletionItemProvider, 'm');
   vscode.languages.registerCompletionItemProvider(['vue', 'javascript', 'html', 'wxml'], meteor.swaggerCompletionItemProvider, '');
   // 函数补全函数
@@ -67,16 +67,26 @@ export function activate(context: vscode.ExtensionContext) {
   })
   // 状态栏
   let statusBarItem: vscode.StatusBarItem;
-  statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 9999);
+  statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 99999);
 	statusBarItem.command = statusCommandId;
   statusBarItem.text = 'Swagger'
   statusBarItem.show()
   // jenkins 状态条
   let statusJenkinsBarItem: vscode.StatusBarItem;
-  statusJenkinsBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 9999);
+  statusJenkinsBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 99999);
 	statusJenkinsBarItem.command = statusJenkinsCommandId;
   statusJenkinsBarItem.text = 'Jenkins'
   statusJenkinsBarItem.show()
+  // 容器云
+  const statusCloudCommandId = 'meteor.cloud'
+  vscode.commands.registerCommand(statusCloudCommandId, async () => {
+    meteor.cloud.init()
+  })
+  let statusCloudBarItem: vscode.StatusBarItem;
+  statusCloudBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 99999);
+	statusCloudBarItem.command = statusCloudCommandId;
+  statusCloudBarItem.text = 'Cloud'
+  statusCloudBarItem.show()
   // 页面生成
 	vscode.commands.registerCommand('meteor.newPage', (uri) => {
 		meteor.newPage.showQuickPick(context, uri)
