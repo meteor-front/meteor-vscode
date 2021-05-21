@@ -238,10 +238,10 @@ export default class Cloud {
           }
         }
       } else {
-        window.showInformationMessage('操作失败，请重试！')
+        window.showInformationMessage('获取环境信息失败！')
       }
     } else {
-      window.showInformationMessage('操作失败，请重试！')
+      window.showInformationMessage('登录失败！')
     }
   }
 }

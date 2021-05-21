@@ -4,7 +4,7 @@
   "description": "every thing for speed",
   "author": "shenjiaolong",
   "icon": "asset/logo.png",
-  "version": "3.5.1",
+  "version": "3.5.2",
   "publisher": "shenjiaolong",
   "scripts": {
     "postinstall": "run-s install:*",
