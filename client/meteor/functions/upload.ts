@@ -283,6 +283,6 @@ export default class UploadPanel {
 
 	private _updateForCreateProject(webview: vscode.Webview) {
 		this._panel.title = 'Meteor';
-		this._panel.webview.html = getHtmlForWebview(webview, this._extensionPath, '/page?tab=' + UploadPanel.activeTab, '创建页面');
+		this._panel.webview.html = getHtmlForWebview(webview, this._extensionPath, '/page', '创建页面');
 	}
 }
