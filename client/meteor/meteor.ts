@@ -71,6 +71,7 @@ export default class Meteor {
         token: user.token
       }
     });
+    let retPromise: any = null
     window.withProgress({
       location: ProgressLocation.Notification,
       title: 'meteor',
@@ -86,85 +87,100 @@ export default class Meteor {
       let count: number = 1;
       let files: any [] = [];
       if (res.data && res.data.data) {
-        let data = res.data.data;
         let page: any = {};
         let component: any = {};
-        data.forEach((item: any) => {
-          let obj = null;
-          // type: 0 组件   1 页面
-          if (item.type === '1') {
-            obj = page;
-          } else {
-            obj = component;
+        new Promise(async (resolve, reject) => {
+          let data = res.data.data;
+          for (let j = 0; j < data.length; j++) {
+            const item: any = data[j];
+            let obj = null;
+            // type: 0 组件   1 页面
+            if (item.type === '1') {
+              obj = page;
+            } else {
+              obj = component;
+            }
+            obj[item.description.name] = {
+              category: item.category,
+              type: item.type,
+              block: item.block
+            };
+            let pages: any = [];
+            for (let i = 0; i < item.code.length; i++) {
+              const codeItem: any = item.code[i];
+              if (/^@file:/gi.test(codeItem.code)) {
+                const res: any = await this.fetch.get('/getCodeFile?name=' + codeItem.code.replace('@file:', ''), {
+                  headers: {
+                    token: user.token
+                  }
+                })
+                codeItem.code = res.data.data || ''
+              }
+              let dotPosition = codeItem.name.lastIndexOf('.');
+              pages.push({
+                template: item.id + '/' + codeItem.name,
+                type: codeItem.type,
+                fileName: codeItem.name.substr(0, dotPosition),
+                poster: codeItem.name.substr(dotPosition, codeItem.name.length),
+                position: codeItem.position
+              });
+              files.push({
+                pageId: item.id,
+                pageType: item.type,
+                ...codeItem
+              });
+              count++;
+            }
+            obj[item.description.name].pages = pages;
           }
-          obj[item.description.name] = {
-            category: item.category,
-            type: item.type,
-            block: item.block
-          };
-          let pages: any = [];
-          item.code.forEach((codeItem: any) => {
-            let dotPosition = codeItem.name.lastIndexOf('.');
-            pages.push({
-              template: item.id + '/' + codeItem.name,
-              type: codeItem.type,
-              fileName: codeItem.name.substr(0, dotPosition),
-              poster: codeItem.name.substr(dotPosition, codeItem.name.length),
-              position: codeItem.position
-            });
-            files.push({
-              pageId: item.id,
-              pageType: item.type,
-              ...codeItem
-            });
-            count++;
-          });
-          obj[item.description.name].pages = pages;
-        });
-        // 生成page文件
-        let rootPagePath = path.join(this.context.extensionUri.path, 'asset/template');
-        let pagePath = path.join(rootPagePath, 'page.json');
-        let rootComponentPath = path.join(this.context.extensionUri.path, 'asset/component');
-        let componentPath = path.join(rootComponentPath, 'component.json');
-        current++;
-        pagePath = winRootPathHandle(pagePath);
-        componentPath = winRootPathHandle(componentPath);
-        try {
-          fs.writeFileSync(pagePath, JSON.stringify(page));
-          fs.writeFileSync(componentPath, JSON.stringify(component));
-        } catch (error) {
-          console.log(error);
-        }
-        progress.report({
-          increment: current * 100 / count,
-          message: msg
-        });
-        // 生成页面文件
-        for (let i = 0; i < files.length; i++) {
-          const file = files[i];
-          let root = file.pageType === '1' ? rootPagePath :  rootComponentPath;
-          let filePath = path.join(root, file.pageId.toString());
-          filePath = winRootPathHandle(filePath);
-          try {
-            fs.statSync(filePath);
-          } catch (error) {
-            fs.mkdirSync(filePath);
-          }
-          // position为代码块名称
-          let filePathName = path.join(filePath, file.name || (file.position ? (file.position + '.txt') : 'index.txt'));
-          filePathName = winRootPathHandle(filePathName);
-          fs.writeFileSync(filePathName, file.code);
+          resolve('')
+        }).then((res) => {
+          // 生成page文件
+          let rootPagePath = path.join(this.context.extensionUri.path, 'asset/template');
+          let pagePath = path.join(rootPagePath, 'page.json');
+          let rootComponentPath = path.join(this.context.extensionUri.path, 'asset/component');
+          let componentPath = path.join(rootComponentPath, 'component.json');
           current++;
+          pagePath = winRootPathHandle(pagePath);
+          componentPath = winRootPathHandle(componentPath);
+          try {
+            fs.writeFileSync(pagePath, JSON.stringify(page));
+            fs.writeFileSync(componentPath, JSON.stringify(component));
+          } catch (error) {
+            console.log(error);
+          }
           progress.report({
             increment: current * 100 / count,
             message: msg
           });
-        }
+          // 生成页面文件
+          for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            let root = file.pageType === '1' ? rootPagePath :  rootComponentPath;
+            let filePath = path.join(root, file.pageId.toString());
+            filePath = winRootPathHandle(filePath);
+            try {
+              fs.statSync(filePath);
+            } catch (error) {
+              fs.mkdirSync(filePath);
+            }
+            // position为代码块名称
+            let filePathName = path.join(filePath, file.name || (file.position ? (file.position + '.txt') : 'index.txt'));
+            filePathName = winRootPathHandle(filePathName);
+            fs.writeFileSync(filePathName, file.code);
+            current++;
+            progress.report({
+              increment: current * 100 / count,
+              message: msg
+            });
+          }
+          retPromise()
+        }).catch((err) => {
+          retPromise()
+        })
       }
       return new Promise((resolve, reject) => {
-        setTimeout(() => {
-          resolve('success');
-        }, 3000);
+        retPromise = resolve
       });
     });
   }
