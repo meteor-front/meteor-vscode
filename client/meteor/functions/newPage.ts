@@ -436,12 +436,14 @@ export default class NewPage {
                   scriptChild.children.forEach((vueProp: any) => {
                     if (names.includes(vueProp.name)) {
                       names.splice(names.indexOf(vueProp.name), 1);
-                      let line = vueProp.kind === 5 ? vueProp.location.range._end._line - 2 : vueProp.location.range._end._line - 1
+                      let line = (vueProp.kind === 5 && vueProp.name === 'data') ? vueProp.location.range._end._line - 2: vueProp.location.range._end._line - 1
                       let code = '';
                       // code存在才处理
                       if (templateObj[vueProp.name]) {
                         if (vueProp.children.length > 0) {
                           code += ',\n';
+                        } else {
+                          code += '\n'
                         }
                         code += templateObj[vueProp.name];
                         insertList.push({
