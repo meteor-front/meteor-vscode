@@ -56,7 +56,6 @@ export default class NewPage {
       });
     });
     obj[page.description.name].pages = pages;
-
     if (page.type === '0') {
       // 组件
       let edior: vscode.TextEditor | undefined = NewPage.activeTextEditor || NewPage.priviousTextEditor
@@ -87,6 +86,7 @@ export default class NewPage {
         NewPage.getQuickPickItems()
         NewPage.pick = page.description.name;
         NewPage.pageName = page.description.name;
+        NewPage.pageTemplateList = obj
         NewPage.showGenerateNameInput(page.description || '');
       } else {
         vscode.window.showInformationMessage('请选择生成页面目录！')
@@ -109,16 +109,18 @@ export default class NewPage {
     // } catch (error) {
       
     // }
-    let conf = JSON.parse(config);
-    let pages = [];
-    for (const key in conf) {
-      pages.push({
-        label: key,
-        description: `(${conf[key].category})`
-      });
+    if (config) {
+      let conf = JSON.parse(config);
+      let pages = [];
+      for (const key in conf) {
+        pages.push({
+          label: key,
+          description: `(${conf[key].category})`
+        });
+      }
+      NewPage.pageTemplateList = Object.assign(NewPage.pageTemplateList, conf);
+      NewPage.pages = NewPage.pages.concat(pages);
     }
-    NewPage.pageTemplateList = Object.assign(NewPage.pageTemplateList, conf);
-    NewPage.pages = NewPage.pages.concat(pages);
   }
   public static async init(context: vscode.ExtensionContext, uri: vscode.Uri) {
     if (uri) {
