@@ -367,6 +367,7 @@ export default class NewPage {
       // 合并代码块内容, 拼装规则为，func内容在slot-name来替换组件内容
       let names: string[] = [];
       let templateObj: any = {};
+      console.log('pages', pages)
       pages.forEach(page => {
         let templatePath = ''
         if (!page.onlineCode) {
@@ -397,11 +398,7 @@ export default class NewPage {
               templateObj[tempateItem.name] += tempateItem.code;
             }
           } else {
-            if (page.type === 'func') {
-              templateObj[tempateItem.name] = templateObj[tempateItem.name].replace(new RegExp(`slot-${page.position}`), tempateItem.code)
-            } else {
-              templateObj[tempateItem.name] = tempateItem.code;
-            }
+            templateObj[tempateItem.name] = tempateItem.code;
           }
         }
       })
