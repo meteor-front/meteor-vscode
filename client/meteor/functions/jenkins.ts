@@ -1,8 +1,11 @@
-import { window, QuickInputButton, Uri, QuickPickItem, ProgressLocation } from 'vscode'
+import { window, QuickInputButton, Uri, QuickPickItem, ProgressLocation, env } from 'vscode'
 import Meteor from '../meteor'
 import { getWorkspaceRoot, open } from '../utils/util'
 import JenkinsPanel from './jenkinsConfig'
+const execa = require('execa');
 const axios = require('axios');
+import * as fs from 'fs'
+import * as path from 'path'
 
 export default class Jenkins {
   private meteor: Meteor
@@ -16,13 +19,15 @@ export default class Jenkins {
   private url: string = ''
   private token: string = ''
   private job: string = ''
+  private workspacePath = ''
 
   constructor(meteor: Meteor) {
     this.meteor = meteor
   }
 
-  init() {
-    this.projectName = getWorkspaceRoot('').replace(/.*[\/\\](.*)$/gi, '$1')
+  async init() {
+    this.workspacePath = getWorkspaceRoot('')
+    this.projectName = this.workspacePath.replace(/.*[\/\\](.*)$/gi, '$1')
     this.job = this.projectName
     // 获取配置信息
     let config = this.meteor.config.get('jenkinsConfig')
@@ -75,7 +80,7 @@ export default class Jenkins {
     // 选中选项
     quickPick.onDidChangeSelection((selection) => {
       if (selection[0] && selection[0].label) {
-        this.buildJob(selection[0].label)
+        this.buildDist(selection[0].label)
       }
       quickPick.hide()
     })
@@ -151,7 +156,8 @@ export default class Jenkins {
                 const reg = new RegExp(`\\s[\\w.\\/]*\\/${this.job}:${version}\\s`, 'gi')
                 let ret: any = res.data.match(reg)
                 if (ret) {
-                  window.showInformationMessage(`最新镜像版本：${ret[0]}`)
+                  window.showInformationMessage(`最新镜像(已复制到剪切板)：${ret[0]}`)
+                  env.clipboard.writeText(ret[0])
                 }
               })
             }
@@ -169,5 +175,49 @@ export default class Jenkins {
       window.showInformationMessage('检查Job名称、分支是否正确？`')
       console.error(error)
     }
+  }
+  // 编译dist
+  public async buildDist(branch: string) {
+    // dist目录自动打包
+    let buildResolve: any = null
+    let buildReject: any = null
+    let workspacePath = this.workspacePath
+    window.withProgress({
+      location: ProgressLocation.Notification,
+      title: 'Meteor',
+      cancellable: true
+    }, async (progress, _token) => {
+      progress.report({
+        message: '自动编译，请稍后...'
+      })
+      new Promise(async (resolve, reject) => {
+        try {
+          fs.statSync(path.join(workspacePath, 'gggg'))
+          await execa('npm', ['run', 'build'], {
+            cwd: workspacePath
+          })
+          await execa('git', ['add', '.'], {
+            cwd: workspacePath
+          })
+          await execa('git', ['commit', '-m', 'dist'], {
+            cwd: workspacePath
+          })
+          await execa('git', ['push'], {
+            cwd: workspacePath
+          })
+          buildResolve('')
+          this.buildJob(branch)
+        } catch (error) {
+          setTimeout(() => {
+            this.buildJob(branch)
+          }, 1000);
+          buildResolve('')
+        }
+      })
+      new Promise((resolve, reject) => {
+        buildResolve = resolve
+        buildReject = reject
+      })
+    })
   }
 }
