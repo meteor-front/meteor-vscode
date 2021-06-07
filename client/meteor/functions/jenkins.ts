@@ -192,7 +192,7 @@ export default class Jenkins {
       })
       new Promise(async (resolve, reject) => {
         try {
-          fs.statSync(path.join(workspacePath, 'gggg'))
+          fs.statSync(path.join(workspacePath, 'dist'))
           await execa('npm', ['run', 'build'], {
             cwd: workspacePath
           })
