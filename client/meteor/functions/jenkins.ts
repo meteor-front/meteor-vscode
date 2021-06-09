@@ -156,7 +156,7 @@ export default class Jenkins {
                 const reg = new RegExp(`\\s[\\w.\\/]*\\/${this.job}:${version}\\s`, 'gi')
                 let ret: any = res.data.match(reg)
                 if (ret) {
-                  window.showInformationMessage(`最新镜像(已复制到剪切板)：${ret[0]}`)
+                  window.showInformationMessage(`镜像地址[已复制到剪切板]：${ret[0]}`)
                   env.clipboard.writeText(ret[0])
                 }
               })
@@ -188,7 +188,7 @@ export default class Jenkins {
       cancellable: true
     }, async (progress, _token) => {
       progress.report({
-        message: '自动编译，请稍后...'
+        message: '自动编译中，请稍后...'
       })
       new Promise(async (resolve, reject) => {
         try {
@@ -214,7 +214,7 @@ export default class Jenkins {
           buildResolve('')
         }
       })
-      new Promise((resolve, reject) => {
+      return new Promise((resolve, reject) => {
         buildResolve = resolve
         buildReject = reject
       })
