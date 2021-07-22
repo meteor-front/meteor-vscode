@@ -54,6 +54,7 @@
   "activationEvents": [
     "onLanguage:html",
     "onLanguage:vue",
+    "onLanguage:wxml",
     "onCommand:meteor.functionCompletion",
     "onCommand:meteor.blockSelect",
     "onCommand:meteor.deleteComplete",

@@ -488,7 +488,7 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
       // 属性
       let attrs = '';
       defaults && defaults.forEach((item: any, i: any) => {
-        attrs += ` ${item}='$${index + i + 1}'`;
+        attrs += ` ${item}="$${index + i + 1}"`;
       });
       // 开始标签
       snippets.push(`${index > 0 ? '<' : ''}${tag}${attrs}>`);
@@ -949,6 +949,7 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
         case 'vue':
           return this.notInTemplate() ? [] : this.getTagSuggestion();
         case 'html':
+        case 'wxml':
           return this.getTagSuggestion();
       }
     } else if (this.isImport()) {
