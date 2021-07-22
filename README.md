@@ -3,6 +3,9 @@
 详细说明请查看[官网](https://www.80fight.cn/vscode/)<br>
 ![](https://www.80fight.cn/vscode/framework.png)
 
+# version 4.1.5
+支持vant提示
+
 # 扩展功能
 插件meteor的宗旨是提高开发效率，一切能够提高效率的功能，meteor都是欢迎的。<br>
 目前meteor中扩展的功能主要有以下部分：<br>
