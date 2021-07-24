@@ -529,6 +529,7 @@ export default class NewPage {
         let templateObj: any = {};
         // wxml wxss json
         let has = ['', '', '', ''];
+        let cursorCode = ''
         for (let i = 0; i < templateArr.length; i++) {
           const tempateItem = templateArr[i];
           if (tempateItem.name === 'wxml') {
@@ -537,6 +538,8 @@ export default class NewPage {
             has[1] = tempateItem.code;
           } else if (tempateItem.name === 'json') {
             has[2] = tempateItem.code;
+          } else if (tempateItem.name === 'cursor') {
+            cursorCode = tempateItem.code;
           } else {
             names.push(tempateItem.name);
             templateObj[tempateItem.name] = tempateItem.code;
@@ -659,6 +662,13 @@ export default class NewPage {
           }
         }
         // js文件处理
+        if (cursorCode) {
+          // 直接在光标位置添加代码
+          editor?.edit((editBuilder: any) => {
+            editBuilder.insert(editor?.selection.active, cursorCode);
+          });
+          return
+        }
         let pathJs = path.join(docFolder, fileName + '.js');
         try {
           pathJs = winRootPathHandle(pathJs);
