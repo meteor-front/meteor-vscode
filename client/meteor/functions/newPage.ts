@@ -367,7 +367,6 @@ export default class NewPage {
       // 合并代码块内容, 拼装规则为，func内容在slot-name来替换组件内容
       let names: string[] = [];
       let templateObj: any = {};
-      console.log('pages', pages)
       pages.forEach(page => {
         let templatePath = ''
         if (!page.onlineCode) {
@@ -382,7 +381,7 @@ export default class NewPage {
           try {
             template = fs.readFileSync(templatePath, 'utf-8');
           } catch (error) {
-            console.log('error', error)
+            console.error('error', error)
           }
         }
         let templateArr = JSON.parse(template);
@@ -506,11 +505,12 @@ export default class NewPage {
 
   /**
    * 小程序代码块生成
-   * @param page 
+   * @param pages 
    */
-  public static codeBlockFillMiniapp(page: any) {
+  public static codeBlockFillMiniapp(pages: any) {
     let editor: vscode.TextEditor | undefined = NewPage.activeTextEditor || NewPage.priviousTextEditor;
     if (editor) {
+      pages.forEach((page:any) => {
       let templatePath = ''
       if (!page.onlineCode) {
         templatePath = path.join(NewPage.context.extensionUri.path, NewPage.way === NewPage.GenerateWay.PAGE ? NewPage.templateRoot : NewPage.componentRoot, page.template + 'index.txt');
@@ -543,7 +543,7 @@ export default class NewPage {
           }
         }
         // 小程序分五个文件处理
-        let filePath = editor.document.uri.path
+        let filePath = editor && editor.document.uri.path || ''
         let fileName = filePath.replace(/.*\/(.*)\..*/gi, '$1')
         let docFolder = path.join(filePath, '..');
         // wxml文件
@@ -772,9 +772,12 @@ ${space}},\n`;
             fs.writeFileSync(pathJs, jsFill);
           }
         } catch (error) {
+          console.error('in error', error)
         }
       } catch (error) {
+        console.error('error', error)
       }
+    })
     }
   }
 
