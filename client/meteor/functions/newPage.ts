@@ -713,14 +713,19 @@ export default class NewPage {
               if (tag.kind === '1') {
                 if (i > tag.beginLine + 1) {
                   // 有属性
-                  let space = jsArr[i - 1].replace(jsArr[i - 1].trim(), '');
+                  let prevCont = jsArr[i - 1]
+                  let space = prevCont.replace(prevCont.trim(), '');
                   if (templateObj[tag.name]) {
                     names.splice(names.indexOf(tag.name), 1);
                     jsFill = jsFill.substr(0, jsFill.length - 1);
-                    if (!jsFill.endsWith(',')) {
-                      jsFill += ',';
+                    if (prevCont.trim()) {
+                      if (!jsFill.endsWith(',')) {
+                        jsFill += ',';
+                      }
+                      jsFill += '\n' + space + templateObj[tag.name] + '\n';
+                    } else {
+                      jsFill += space + templateObj[tag.name] + '\n';
                     }
-                    jsFill += '\n' + space + templateObj[tag.name] + '\n';
                   }
                 } else {
                   // 没有属性
@@ -728,9 +733,9 @@ export default class NewPage {
                   if (templateObj[tag.name]) {
                     names.splice(names.indexOf(tag.name), 1);
                     jsFill = jsFill.substr(0, jsFill.length - 1);
-                    if (!jsFill.endsWith(',')) {
-                      jsFill += ',';
-                    }
+                    // if (!jsFill.endsWith(',')) {
+                    //   jsFill += ',';
+                    // }
                     jsFill += '\n' + space + templateObj[tag.name] + '\n';
                   }
                 }
@@ -769,9 +774,9 @@ export default class NewPage {
               names.forEach((name) => {
                 if (templateObj[name]) {
                   jsFill = jsFill.substr(0, jsFill.length - 1);
-                  if (!jsFill.endsWith(',')) {
-                    jsFill += ',';
-                  }
+                  // if (!jsFill.endsWith(',')) {
+                  //   jsFill += ',';
+                  // }
                   jsFill += `\n${space}${name}() {
 ${space}  ${templateObj[name]}
 ${space}},\n`;
