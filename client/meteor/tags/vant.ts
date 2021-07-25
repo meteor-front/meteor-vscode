@@ -24,7 +24,7 @@ export default {
     "framework": "vant"
   },
   "van-image": {
-    "attributes": ["src", "fit", "alt", "width", "height", "radius", "round", "lazy-load", "show-error", "show-loading", "use-error-slot", "use-loading-slot", "show-menu-by-longpress", "click", "load", "error"],
+    "attributes": ["src", "fit", "alt", "width", "height", "radius", "round", "lazy-load", "show-error", "show-loading", "use-error-slot", "use-loading-slot", "show-menu-by-longpress", "bind:click", "bind:load", "bind:error"],
     "subtags": [],
     "defaults": [],
     "framework": "vant"
@@ -48,7 +48,7 @@ export default {
     "framework": "vant"
   },
   "van-calendar": {
-    "attributes": ["type", "title", "color", "min-date", "max-date", "default-date", "row-height", "formatter", "poppable", "show-mark", "show-title", "show-subtitle", "show-confirm", "confirm-text", "confirm-disabled-text", "first-day-of-week", "select", "unselect", "confirm", "open", "close", "opened", "closed", "over-range"],
+    "attributes": ["type", "title", "color", "min-date", "max-date", "default-date", "row-height", "formatter", "poppable", "show-mark", "show-title", "show-subtitle", "show-confirm", "confirm-text", "confirm-disabled-text", "first-day-of-week", "bind:select", "bind:unselect", "bind:confirm", "bind:open", "bind:close", "bind:opened", "bind:closed", "bind:over-range"],
     "subtags": [],
     "defaults": ["show", "bind:close", "bind:confirm"],
     "framework": "vant"
@@ -66,7 +66,7 @@ export default {
     "framework": "vant"
   },
   "van-datetime-picker": {
-    "attributes": ["value", "type", "min-date", "max-date", "min-hour", "max-hour", "min-minute", "max-minute", "filter", "formatter", "title", "show-toolbar", "loading", "item-height", "confirm-button-text", "cancel-button-text", "visible-item-count", "input", "change", "confirm", "cancel"],
+    "attributes": ["value", "type", "min-date", "max-date", "min-hour", "max-hour", "min-minute", "max-minute", "filter", "formatter", "title", "show-toolbar", "loading", "item-height", "confirm-button-text", "cancel-button-text", "visible-item-count", "bind:input", "bind:change", "bind:confirm", "bind:cancel"],
     "subtags": [],
     "defaults": ["type", "value", "min-date", "max-date", "bind:input"],
     "framework": "vant"
@@ -78,7 +78,7 @@ export default {
     "framework": "vant"
   },
   "van-picker": {
-    "attributes": ["columns", "show-toolbar", "toolbar-position", "title", "loading", "value-key", "item-height", "confirm-button-text", "cancel-button-text", "visible-item-count", "default-index", "confirm", "cancel", "change"],
+    "attributes": ["columns", "show-toolbar", "toolbar-position", "title", "loading", "value-key", "item-height", "confirm-button-text", "cancel-button-text", "visible-item-count", "default-index", "bind:confirm", "bind:cancel", "bind:change"],
     "subtags": [],
     "defaults": ["columns", "bind:change"],
     "framework": "vant"
@@ -96,7 +96,7 @@ export default {
     "framework": "vant"
   },
   "van-rate": {
-    "attributes": ["name", "value", "count", "size", "gutter", "color", "void-color", "icon", "void-icon", "allow-half", "readonly", "disabled", "disabled-color", "touchable", "change"],
+    "attributes": ["name", "value", "count", "size", "gutter", "color", "void-color", "icon", "void-icon", "allow-half", "readonly", "disabled", "disabled-color", "touchable", "bind:change"],
     "subtags": [],
     "defaults": ["value", "bind:change"],
     "framework": "vant"
@@ -150,7 +150,7 @@ export default {
     "framework": "vant"
   },
   "van-dropdown-item": {
-    "attributes": ["value", "title", "options", "disabled", "title-class", "popup-style", "change", "open", "close", "opened", "closed"],
+    "attributes": ["value", "title", "options", "disabled", "title-class", "popup-style", "bind:change", "bind:open", "bind:close", "bind:opened", "bind:closed"],
     "subtags": [],
     "defaults": ["value", "options"],
     "framework": "vant"
@@ -174,13 +174,13 @@ export default {
     "framework": "vant"
   },
   "van-share-sheet": {
-    "attributes": ["options", "title", "cancel-text", "description", "duration", "overlay", "close-on-click-overlay", "safe-area-inset-bottom", "select", "close", "cancel", "click-overlay"],
+    "attributes": ["options", "title", "cancel-text", "description", "duration", "overlay", "close-on-click-overlay", "safe-area-inset-bottom", "bind:select", "bind:close", "bind:cancel", "bind:click-overlay"],
     "subtags": [],
     "defaults": ["show", "title", "options", "bind:select", "bind:close"],
     "framework": "vant"
   },
   "van-swipe-cell": {
-    "attributes": ["name", "left-width", "right-width", "async-close", "disabled", "click", "close", "open"],
+    "attributes": ["name", "left-width", "right-width", "async-close", "disabled", "bind:click", "bind:close", "bind:open"],
     "subtags": [],
     "defaults": [],
     "framework": "vant"
@@ -204,7 +204,7 @@ export default {
     "framework": "vant"
   },
   "van-count-down": {
-    "attributes": ["time", "format", "auto-start", "millisecond", "use-slot", "finish", "change"],
+    "attributes": ["time", "format", "auto-start", "millisecond", "use-slot", "bind:finish", "bind:change"],
     "subtags": [],
     "defaults": [],
     "framework": "vant"
@@ -222,7 +222,7 @@ export default {
     "framework": "vant"
   },
   "van-notice-bar": {
-    "attributes": ["mode", "text", "color", "background", "left-icon", "delay", "speed", "scrollable", "wrapable", "open-type", "click", "close"],
+    "attributes": ["mode", "text", "color", "background", "left-icon", "delay", "speed", "scrollable", "wrapable", "open-type", "bind:click", "bind:close"],
     "subtags": [],
     "defaults": [],
     "framework": "vant"
@@ -246,13 +246,13 @@ export default {
     "framework": "vant"
   },
   "van-sticky": {
-    "attributes": ["offset-top", "z-index", "container", "scroll-top", "scroll"],
+    "attributes": ["offset-top", "z-index", "container", "scroll-top", "bind:scroll"],
     "subtags": [],
     "defaults": [],
     "framework": "vant"
   },
   "van-tag": {
-    "attributes": ["type", "size", "color", "plain", "round", "mark", "text-color", "closeable", "close"],
+    "attributes": ["type", "size", "color", "plain", "round", "mark", "text-color", "closeable", "bind:close"],
     "subtags": [],
     "defaults": ["type"],
     "framework": "vant"
@@ -270,7 +270,7 @@ export default {
     "framework": "vant"
   },
   "van-index-bar": {
-    "attributes": ["index-list", "z-index", "sticky", "sticky-offset-top", "highlight-color", "select"],
+    "attributes": ["index-list", "z-index", "sticky", "sticky-offset-top", "highlight-color", "bind:select"],
     "subtags": ["van-index-anchor"],
     "defaults": [],
     "framework": "vant"
@@ -342,7 +342,7 @@ export default {
     "framework": "vant"
   },
   "van-submit-bar": {
-    "attributes": ["price", "label", "suffix-label", "button-text", "button-type", "tip", "tip-icon", "disabled", "loading", "currency", "safe-area-inset-bottom", "decimal-length", "submit"],
+    "attributes": ["price", "label", "suffix-label", "button-text", "button-type", "tip", "tip-icon", "disabled", "loading", "currency", "safe-area-inset-bottom", "decimal-length", "bind:submit"],
     "subtags": [],
     "defaults": ["price", "button-text", "bind:submit"],
     "framework": "vant"

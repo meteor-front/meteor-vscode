@@ -165,7 +165,7 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
           }
         })
         if (apiName === 'upload') {
-          console.log(apiParams)
+          // console.log(apiParams)
         }
         this.apis.set(apiName, apiParams)
       }
@@ -464,8 +464,8 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
 
     tagAttrs.forEach((attr: any) => {
       const attrItem = this.getAttrItem(tag, attr);
-      if (attrItem && (!prefix.trim() || this.firstCharsEqual(attr, prefix))) {
-        const sug = this.buildAttrSuggestion({ attr, tag, bind, method }, attrItem);
+      if (!prefix.trim() || this.firstCharsEqual(attr, prefix)) {
+        const sug = this.buildAttrSuggestion({ attr, tag, bind, method }, attrItem || {});
         sug && suggestions.push(sug);
       }
     });
@@ -527,10 +527,11 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
       }
       return {
         label: attr,
-        insertText: (type && (type === 'flag')) ? `${attr} ` : new SnippetString(`${attr}='$1'$0`),
+        sortText: `00${attr}`,
+        insertText: (type && (type === 'flag')) ? `${attr} ` : new SnippetString(`${attr}="$1"$0`),
         kind: (type && (type === 'method')) ? CompletionItemKind.Method : CompletionItemKind.Property,
         detail,
-        documentation: description
+        documentation: description || ''
       };
     } else { return; }
   }
