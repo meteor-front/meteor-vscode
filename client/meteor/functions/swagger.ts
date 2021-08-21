@@ -70,7 +70,7 @@ export default class SwaggerFactory {
         this.paths = res.data.paths
         let docs: any = {};
         res.data.tags.forEach((tag: any) => {
-          let name = tag.description.replace(/\s/gi, '').replace(/Controller$/gi, '');
+          let name = tag.name.replace(/\s/gi, '').replace(/Controller$/gi, '');
           name = name[0].toLowerCase() + name.substr(1, name.length);
           docs[tag.name] = {};
           let apiPath = path.join(this.workspaceRoot, this.meteor.config.get('rootPathApi') || '', name + '.js');
@@ -438,7 +438,7 @@ ${this.meteor.tabSpace}}`;
     if (res && res.data) {
       let docs: any = {};
       res.data.tags.forEach((tag: any) => {
-        let name = tag.description.replace(/\s/gi, '').replace(/Controller$/gi, '');
+        let name = tag.name.replace(/\s/gi, '').replace(/Controller$/gi, '');
         name = name[0].toLowerCase() + name.substr(1, name.length);
         docs[tag.name] = {};
         // 生成接口入口文件
