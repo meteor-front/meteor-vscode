@@ -70,13 +70,19 @@ export default class SwaggerFactory {
         this.paths = res.data.paths
         let docs: any = {};
         res.data.tags.forEach((tag: any) => {
-          let name = tag.name.replace(/\s/gi, '').replace(/Controller$/gi, '');
+          let tagName = ''
+          if (/^[a-zA-Z\s]*$/gi.test(tag.name)) {
+            tagName = tag.name
+          } else if (/^[a-zA-Z\s]*$/gi.test(tag.description)) {
+            tagName = tag.description
+          }
+          let name = camelCase(tagName.replace(/\s/gi, '')).replace(/Controller$/gi, '');
           name = name[0].toLowerCase() + name.substr(1, name.length);
-          docs[tag.name] = {};
+          docs[tagName] = {};
           let apiPath = path.join(this.workspaceRoot, this.meteor.config.get('rootPathApi') || '', name + '.js');
           apiPath = winRootPathHandle(apiPath);
-          docs[tag.name].name = name;
-          docs[tag.name].url = apiPath;
+          docs[tagName].name = name;
+          docs[tagName].url = apiPath;
         })
         this.docs = docs
   
@@ -438,9 +444,15 @@ ${this.meteor.tabSpace}}`;
     if (res && res.data) {
       let docs: any = {};
       res.data.tags.forEach((tag: any) => {
-        let name = tag.name.replace(/\s/gi, '').replace(/Controller$/gi, '');
+        let tagName = ''
+        if (/^[a-zA-Z\s]*$/gi.test(tag.name)) {
+          tagName = tag.name
+        } else if (/^[a-zA-Z\s]*$/gi.test(tag.description)) {
+          tagName = tag.description
+        }
+        let name = camelCase(tagName.replace(/\s/gi, '')).replace(/Controller$/gi, '');
         name = name[0].toLowerCase() + name.substr(1, name.length);
-        docs[tag.name] = {};
+        docs[tagName] = {};
         // 生成接口入口文件
         if (!this.workspaceRoot) {
           window.showInformationMessage("请先打开工程");
@@ -448,8 +460,8 @@ ${this.meteor.tabSpace}}`;
         }
         let apiPath = path.join(this.workspaceRoot, this.meteor.config.get('rootPathApi') || '', name + '.js');
         apiPath = winRootPathHandle(apiPath);
-        docs[tag.name].name = name;
-        docs[tag.name].url = apiPath;
+        docs[tagName].name = name;
+        docs[tagName].url = apiPath;
         try {
           if (all) {
             fs.writeFileSync(apiPath, `import request from \'${this.meteor.config.get('rootPathRequest')}'\n`);
