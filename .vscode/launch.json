@@ -24,7 +24,7 @@
       "name": "server",
       "type": "node",
       "request": "attach",
-      "port": 6005,
+      "port": 5858,
       "sourceMaps": true,
       "outFiles": ["${workspaceFolder}/server/dist/meteorServerMain.js"],
       "protocol": "inspector",

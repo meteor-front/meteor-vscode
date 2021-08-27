@@ -71,10 +71,12 @@ export default class SwaggerFactory {
         let docs: any = {};
         res.data.tags.forEach((tag: any) => {
           let tagName = ''
-          if (/^[a-zA-Z\s]*$/gi.test(tag.name)) {
+          if (/^[a-zA-Z-\s]*$/gi.test(tag.name)) {
             tagName = tag.name
-          } else if (/^[a-zA-Z\s]*$/gi.test(tag.description)) {
+          } else if (/^[a-zA-Z-\s]*$/gi.test(tag.description)) {
             tagName = tag.description
+          } else {
+            tagName = tag.name
           }
           let name = camelCase(tagName.replace(/\s/gi, '')).replace(/Controller$/gi, '');
           name = name[0].toLowerCase() + name.substr(1, name.length);
@@ -445,10 +447,12 @@ ${this.meteor.tabSpace}}`;
       let docs: any = {};
       res.data.tags.forEach((tag: any) => {
         let tagName = ''
-        if (/^[a-zA-Z\s]*$/gi.test(tag.name)) {
+        if (/^[a-zA-Z-\s]*$/gi.test(tag.name)) {
           tagName = tag.name
-        } else if (/^[a-zA-Z\s]*$/gi.test(tag.description)) {
+        } else if (/^[a-zA-Z-\s]*$/gi.test(tag.description)) {
           tagName = tag.description
+        } else {
+          tagName = tag.name
         }
         let name = camelCase(tagName.replace(/\s/gi, '')).replace(/Controller$/gi, '');
         name = name[0].toLowerCase() + name.substr(1, name.length);
