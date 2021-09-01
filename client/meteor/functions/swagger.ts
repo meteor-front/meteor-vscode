@@ -78,13 +78,13 @@ export default class SwaggerFactory {
           } else {
             tagName = tag.name
           }
-          let name = camelCase(tagName.replace(/\s/gi, '')).replace(/Controller$/gi, '');
-          name = name[0].toLowerCase() + name.substr(1, name.length);
-          docs[tagName] = {};
-          let apiPath = path.join(this.workspaceRoot, this.meteor.config.get('rootPathApi') || '', name + '.js');
+          tagName = camelCase(tagName.replace(/\s/gi, '')).replace(/Controller$/gi, '')
+          tagName = tagName[0].toLowerCase() + tagName.substr(1, tagName.length);
+          docs[tag.name] = {};
+          let apiPath = path.join(this.workspaceRoot, this.meteor.config.get('rootPathApi') || '', tagName + '.js');
           apiPath = winRootPathHandle(apiPath);
-          docs[tagName].name = name;
-          docs[tagName].url = apiPath;
+          docs[tag.name].name = tagName;
+          docs[tag.name].url = apiPath;
         })
         this.docs = docs
   
@@ -454,18 +454,18 @@ ${this.meteor.tabSpace}}`;
         } else {
           tagName = tag.name
         }
-        let name = camelCase(tagName.replace(/\s/gi, '')).replace(/Controller$/gi, '');
-        name = name[0].toLowerCase() + name.substr(1, name.length);
-        docs[tagName] = {};
+        tagName = camelCase(tagName.replace(/\s/gi, '')).replace(/Controller$/gi, '')
+        tagName = tagName[0].toLowerCase() + tagName.substr(1, tagName.length);
+        docs[tag.name] = {};
         // 生成接口入口文件
         if (!this.workspaceRoot) {
           window.showInformationMessage("请先打开工程");
           return;
         }
-        let apiPath = path.join(this.workspaceRoot, this.meteor.config.get('rootPathApi') || '', name + '.js');
+        let apiPath = path.join(this.workspaceRoot, this.meteor.config.get('rootPathApi') || '', tagName + '.js');
         apiPath = winRootPathHandle(apiPath);
-        docs[tagName].name = name;
-        docs[tagName].url = apiPath;
+        docs[tag.name].name = tagName;
+        docs[tag.name].url = apiPath;
         try {
           if (all) {
             fs.writeFileSync(apiPath, `import request from \'${this.meteor.config.get('rootPathRequest')}'\n`);
@@ -484,9 +484,9 @@ ${this.meteor.tabSpace}}`;
           }
           let storePath = '';
           if (hasModules) {
-            storePath = path.join(this.workspaceRoot, rootPathStore, 'modules', name + '.js');
+            storePath = path.join(this.workspaceRoot, rootPathStore, 'modules', tagName + '.js');
           } else {
-            storePath = path.join(this.workspaceRoot, rootPathStore,  name + '.js');
+            storePath = path.join(this.workspaceRoot, rootPathStore,  tagName + '.js');
           }
           try {
             if (all) {
