@@ -4,7 +4,7 @@
   "description": "every thing for speed",
   "author": "shenjiaolong",
   "icon": "asset/logo.png",
-  "version": "4.2.0",
+  "version": "4.2.2",
   "publisher": "shenjiaolong",
   "scripts": {
     "postinstall": "run-s install:*",
@@ -55,6 +55,8 @@
     "onLanguage:html",
     "onLanguage:vue",
     "onLanguage:wxml",
+    "onLanguage:javascript",
+    "onLanguage:typescript",
     "onCommand:meteor.functionCompletion",
     "onCommand:meteor.blockSelect",
     "onCommand:meteor.deleteComplete",
@@ -167,6 +169,14 @@
       },
       {
         "language": "javascript",
+        "path": "./snippets/vue.json"
+      },
+      {
+        "language": "typescript",
+        "path": "./snippets/element.json"
+      },
+      {
+        "language": "typescript",
         "path": "./snippets/vue.json"
       },
       {

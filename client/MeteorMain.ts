@@ -28,9 +28,9 @@ export function activate(context: vscode.ExtensionContext) {
   const meteor = new Meteor(context)
   
   // 为标签、属性提示提供自动完成功能, 关闭标签功能
-  vscode.languages.registerCompletionItemProvider(['vue', 'javascript', 'html', 'wxml'], meteor.completionItemProvider, '', ':', '<', '"', "'", '/', '@', '(', '>', '{');
-  vscode.languages.registerCompletionItemProvider(['vue', 'javascript', 'html', 'wxml'], meteor.meteorCompletionItemProvider, 'm');
-  vscode.languages.registerCompletionItemProvider(['vue', 'javascript', 'html', 'wxml'], meteor.swaggerCompletionItemProvider, '');
+  vscode.languages.registerCompletionItemProvider(['vue', 'javascript', 'typescript', 'html', 'wxml'], meteor.completionItemProvider, '', ':', '<', '"', "'", '/', '@', '(', '>', '{');
+  vscode.languages.registerCompletionItemProvider(['vue', 'javascript', 'typescript', 'html', 'wxml'], meteor.meteorCompletionItemProvider, 'm');
+  vscode.languages.registerCompletionItemProvider(['vue', 'javascript', 'typescript', 'html', 'wxml'], meteor.swaggerCompletionItemProvider, '');
   // 函数补全函数
   vscode.commands.registerCommand('meteor.functionCompletion', () => {
     let editor = vscode.window.activeTextEditor;
@@ -141,9 +141,9 @@ export function activate(context: vscode.ExtensionContext) {
   })
 
   // 到达定义函数
-  vscode.languages.registerDefinitionProvider(['vue', 'javascript', 'html'], new MeteorDefinitionProvider());
+  vscode.languages.registerDefinitionProvider(['vue', 'javascript', 'typescript', 'html'], new MeteorDefinitionProvider());
   vscode.languages.registerHoverProvider('vue', new DocumentHoverProvider);
-  vscode.languages.registerCompletionItemProvider(['javascript', 'html', 'vue'], new JsCompletionItemProvider(), '.', '(');
+  vscode.languages.registerCompletionItemProvider(['javascript', 'typescript', 'html', 'vue'], new JsCompletionItemProvider(), '.', '(');
 
 	// 服务器用node实现
 	let serverModule = context.asAbsolutePath(
@@ -166,7 +166,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	// Options to control the language client
 	let clientOptions: LanguageClientOptions = {
-		documentSelector: [{ scheme: 'file', language: 'vue' }, { scheme: 'file', language: 'javascript' }],
+		documentSelector: [{ scheme: 'file', language: 'vue' }, { scheme: 'file', language: 'javascript' }, { scheme: 'file', language: 'typescript' }],
 		synchronize: {
 			fileEvents: vscode.workspace.createFileSystemWatcher('**/.clientrc')
 		}
