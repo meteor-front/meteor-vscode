@@ -453,7 +453,7 @@
   "el-tabs": {
     "prefix": "el-tabs",
     "body": [
-      "<el-tabs v-model=\"${1:activeName}\" @tab-click=\"${2:handleClick}\">",
+      "<el-tabs v-model=\"${1:activeTab}\" @tab-click=\"${2:clickTab}\">",
       "\t<el-tab-pane label=\"${3:label}\" name=\"${4:name}\">$5</el-tab-pane>",
       "</el-tabs>"
     ]
@@ -461,7 +461,7 @@
   "el-tabs:card": {
     "prefix": "el-tabs:card",
     "body": [
-      "<el-tabs type=\"card\" v-model=\"${1:activeName}\" @tab-click=\"${2:handleClick}\">",
+      "<el-tabs type=\"card\" v-model=\"${1:activeTab}\" @tab-click=\"${2:clickTab}\">",
       "\t<el-tab-pane label=\"${3:label}\" name=\"${4:name}\">$5</el-tab-pane>",
       "</el-tabs>"
     ]

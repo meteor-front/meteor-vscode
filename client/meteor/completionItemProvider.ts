@@ -861,10 +861,10 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
             for (const itemKey in params.value[0]) {
               const item = params.value[0][itemKey];
               if (typeof item === 'string') {
-                insertText += `${this.tabSpace}${itemKey}: '${item}',\n`
+                insertText += `${this.tabSpace}${itemKey}: ,\n`
               }
             }
-            insertText += `}],\n`
+            insertText += `}]`
           }
           completionItems.push({
             label: key,
@@ -878,10 +878,10 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
           for (const itemKey in params.value) {
             const item = params.value[itemKey];
             if (typeof item === 'string') {
-              insertText += `${this.tabSpace}${itemKey}: '${item}',\n`
+              insertText += `${this.tabSpace}${itemKey}: ,\n`
             }
           }
-          insertText += `},\n`
+          insertText += `}`
           completionItems.push({
             label: key,
             insertText: new SnippetString(insertText),
@@ -892,7 +892,7 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
         } else {
           completionItems.push({
             label: key,
-            insertText: new SnippetString(`${key}: '\${1:${params.type}}',\n`),
+            insertText: new SnippetString(`${key}: `),
             documentation: params.description,
             kind: CompletionItemKind.Field,
             sortText: '000' + completionItems.length
