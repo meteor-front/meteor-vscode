@@ -199,7 +199,7 @@ export default class Jenkins {
           await execa('git', ['add', '.'], {
             cwd: workspacePath
           })
-          await execa('git', ['commit', '-m', 'dist'], {
+          await execa('git', ['commit', '-m', 'build: dist'], {
             cwd: workspacePath
           })
           await execa('git', ['push'], {
