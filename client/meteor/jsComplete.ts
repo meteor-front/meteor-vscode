@@ -18,13 +18,14 @@ export class JsCompletionItemProvider implements CompletionItemProvider {
       let tagPath = pathRegArr[0];
       tagPath = tagPath.replace(/(.*['"])/, '');
       const config = workspace.getConfiguration('meteor');
-
-      tagPath = tagPath.replace(config.componentPrefix.alias, config.componentPrefix.path);
+      if (config.pathAlias) {
+        tagPath = tagPath.replace(config.pathAlias.alias, config.pathAlias.path);
+      }
       if (!tagPath.endsWith('.vue')) {
         tagPath += '.vue';
       }
-      if (tagPath.indexOf('./') > 0 || tagPath.indexOf('../') > 0) {
-        tagPath = path.join(JsCompletionItemProvider.document.fileName, '../', tagPath);
+      if (tagPath.indexOf('./') !== -1 || tagPath.indexOf('../') !== -1) {
+        tagPath = path.join(JsCompletionItemProvider.document.uri.path, '../', tagPath);
       } else {
         tagPath = path.join(workspace.rootPath, tagPath);
       }

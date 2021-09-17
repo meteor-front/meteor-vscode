@@ -856,8 +856,9 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
       const params = paramsObj[key];
       if (!api.params.includes(key)) {
         if (params.type === 'array') {
-          let insertText = `${key}: [{\n`
+          let insertText = ``
           if (params.value.length > 0) {
+            insertText = `${key}: [{\n`
             for (const itemKey in params.value[0]) {
               const item = params.value[0][itemKey];
               if (typeof item === 'string') {
@@ -865,6 +866,8 @@ export default class MeteorCompletionItemProvider implements CompletionItemProvi
               }
             }
             insertText += `}]`
+          } else {
+            insertText = `[]`
           }
           completionItems.push({
             label: key,

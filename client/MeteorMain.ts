@@ -29,7 +29,7 @@ export function activate(context: vscode.ExtensionContext) {
   
   // 为标签、属性提示提供自动完成功能, 关闭标签功能
   vscode.languages.registerCompletionItemProvider(['vue', 'javascript', 'typescript', 'html', 'wxml'], meteor.completionItemProvider, '', ':', '<', '"', "'", '/', '@', '(', '>', '{');
-  vscode.languages.registerCompletionItemProvider(['vue', 'javascript', 'typescript', 'html', 'wxml'], meteor.meteorCompletionItemProvider, 'm');
+  vscode.languages.registerCompletionItemProvider(['vue', 'javascript', 'typescript', 'html', 'wxml', 'scss', 'css', 'wxss'], meteor.meteorCompletionItemProvider, 'm');
   vscode.languages.registerCompletionItemProvider(['vue', 'javascript', 'typescript', 'html', 'wxml'], meteor.swaggerCompletionItemProvider, '');
   // 函数补全函数
   vscode.commands.registerCommand('meteor.functionCompletion', () => {
