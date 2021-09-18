@@ -27,7 +27,7 @@ export default class SwaggerCompletionItemProvider implements CompletionItemProv
       this.tabSpace = setTabSpace()
       this.meteor.swagger.generate(true, false, false)
       let url = this.meteor.swagger.generate(true, false, false)
-      if (url) {
+      if (true) {
         let res: any = this.meteor.swagger.swaggerData
         if (res && res.data) {
           let docs: any = {};

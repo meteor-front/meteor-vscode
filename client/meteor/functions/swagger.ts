@@ -285,22 +285,17 @@ export default class SwaggerFactory {
     for (const apiUrl in this.paths) {
       const post = this.paths[apiUrl];
       for (const postWay in post) {
-        let dataName = '';
         let ret = this.getApiName(post, postWay, apiUrl, apiNameList)
         let apiName = ret.apiName
-        let paramName = ret.paramName
         let remark = ret.remark
         apiNameList.push(apiName)
-        if (postWay === 'get') {
-          paramName += 'data';
-          dataName = '{ ...config, params: data }';
-        } else {
-          paramName += 'data';
-          dataName = 'data, config';
-        }
         let apiUrlName = apiUrl.replace(/{/g, '${');
-let func = `export function ${apiName}(${paramName}, config) {
-  return request.${postWay}(\`${apiUrlName}\`, ${dataName})
+let func = `export function ${apiName}(config) {
+  return request({
+    url: '${apiUrlName}',
+    method: '${postWay}',
+    ...config
+  })
 }\n`;
         try {
           const postBody = post[postWay];
