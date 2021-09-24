@@ -272,6 +272,7 @@ export default class SwaggerFactory {
         fs.statSync(singleApiPath);
       }
     } catch (error) {
+      window.showInformationMessage(`${singleApiPath}文件未找到`)
       fs.writeFileSync(singleApiPath, `import request from \'${this.meteor.config.get('rootPathRequest')}'\n`);
     }
     this.writeApi(false, singleApi, singleApiPathName)
@@ -289,10 +290,16 @@ export default class SwaggerFactory {
         let apiName = ret.apiName
         let remark = ret.remark
         apiNameList.push(apiName)
-        let apiUrlName = apiUrl.replace(/{/g, '${');
+        let apiUrlNameReplace = '${'
+        if (postWay === 'post') {
+          apiUrlNameReplace += 'config.data.'
+        } else {
+          apiUrlNameReplace += 'config.params.'
+        }
+        let apiUrlName = apiUrl.replace(/{/g, apiUrlNameReplace);
 let func = `export function ${apiName}(config) {
   return request({
-    url: '${apiUrlName}',
+    url: \`${apiUrlName}\`,
     method: '${postWay}',
     ...config
   })
