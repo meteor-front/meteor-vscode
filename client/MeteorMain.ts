@@ -6,7 +6,7 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import Meteor from './meteor/meteor'
-import { open, url } from './meteor/utils/util'
+import { open, url, getWorkspaceRoot } from './meteor/utils/util'
 import UploadPanel from './meteor/functions/upload'
 import NewProjectPanel from './meteor/functions/newProject'
 import { MeteorDefinitionProvider } from './meteor/definitionProvider';
@@ -55,6 +55,33 @@ export function activate(context: vscode.ExtensionContext) {
 	vscode.commands.registerCommand('meteor.openOfficial', (uri) => {
 		open(url.official);
 	});
+  // 打开容器云
+	vscode.commands.registerCommand('meteor.openCloud', (uri) => {
+    let url: any = vscode.workspace.getConfiguration('meteor').get('cloudUrl')
+		open(url);
+	});
+  // 打开git
+	vscode.commands.registerCommand('meteor.openGit', (uri) => {
+    let url: any = vscode.workspace.getConfiguration('meteor').get('gitUrl')
+    let workspacePath = getWorkspaceRoot('')
+    let projectName = workspacePath.replace(/.*[\/\\](.*)$/gi, '$1')
+		open(`${url}search?utf8=%E2%9C%93&search=${projectName}&group_id=&project_id=&repository_ref=`);
+	});
+  // 打开jenkins
+	vscode.commands.registerCommand('meteor.openJenkins', (uri) => {
+		let url: any = vscode.workspace.getConfiguration('meteor').get('jenkinsUrl')
+		let config: any = vscode.workspace.getConfiguration('meteor').get('jenkinsConfig')
+    let workspacePath = getWorkspaceRoot('')
+    let projectName = workspacePath.replace(/.*[\/\\](.*)$/gi, '$1')
+    let job = projectName
+    config = config[projectName]
+    if (config) {
+      config = JSON.parse(config)
+      job = config.job
+      url = config.url || url
+    }
+		open(`${url}/job/${job}`);
+	});
   // swagger生成api
   const statusCommandId = 'meteor.swagger'
 	vscode.commands.registerCommand(statusCommandId, async () => {
@@ -63,6 +90,10 @@ export function activate(context: vscode.ExtensionContext) {
   // jenkins生成镜像
   const statusJenkinsCommandId = 'meteor.jenkins'
   vscode.commands.registerCommand(statusJenkinsCommandId, async () => {
+    meteor.jenkins.jenkinsBuild()
+  })
+  // jenkins配置
+  vscode.commands.registerCommand('meteor.jenkinsConfig', async () => {
     meteor.jenkins.init()
   })
   // 状态栏

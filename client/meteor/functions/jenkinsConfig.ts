@@ -112,9 +112,7 @@ export default class JenkinsPanel {
     const token = config.get('jenkinsToken')
 		this._panel.webview.postMessage({ command: 'backJenkinsConfig', config: {
       url: JenkinsPanel.config.url || url,
-      job: JenkinsPanel.config.job || '',
-      token: JenkinsPanel.config.token || token,
-      branches: JenkinsPanel.config.branches
+      job: JenkinsPanel.config.job || ''
     }});
 	}
 

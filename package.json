@@ -4,7 +4,7 @@
   "description": "every thing for speed",
   "author": "shenjiaolong",
   "icon": "asset/logo.png",
-  "version": "4.3.0",
+  "version": "4.3.2",
   "publisher": "shenjiaolong",
   "scripts": {
     "postinstall": "run-s install:*",
@@ -61,8 +61,12 @@
     "onCommand:meteor.blockSelect",
     "onCommand:meteor.deleteComplete",
     "onCommand:meteor.openOfficial",
+    "onCommand:meteor.openGit",
+    "onCommand:meteor.openCloud",
+    "onCommand:meteor.openJenkins",
     "onCommand:meteor.swagger",
     "onCommand:meteor.jenkins",
+    "onCommand:meteor.jenkinsConfig",
     "onCommand:meteor.cloud",
     "onCommand:meteor.newPage",
     "onCommand:meteor.sync",
@@ -85,6 +89,30 @@
         "icon": {
           "light": "asset/light/web.svg",
           "dark": "asset/dark/web.svg"
+        }
+      },
+      {
+        "command": "meteor.openGit",
+        "title": "Git网址",
+        "icon": {
+          "light": "asset/dark/git.svg",
+          "dark": "asset/light/git.svg"
+        }
+      },
+      {
+        "command": "meteor.openJenkins",
+        "title": "jenkins网址",
+        "icon": {
+          "light": "asset/dark/jenkins.svg",
+          "dark": "asset/light/jenkins.svg"
+        }
+      },
+      {
+        "command": "meteor.openCloud",
+        "title": "容器云网址",
+        "icon": {
+          "light": "asset/dark/cloud.svg",
+          "dark": "asset/light/cloud.svg"
         }
       },
       {
@@ -134,6 +162,10 @@
       {
         "command": "meteor.jenkins",
         "title": "meteor.jenkins"
+      },
+      {
+        "command": "meteor.jenkinsConfig",
+        "title": "meteor.jenkinsConfig"
       },
       {
         "command": "meteor.cloud",
@@ -227,6 +259,18 @@
         {
           "command": "meteor.upload",
           "group": "navigation"
+        },
+        {
+          "command": "meteor.openCloud",
+          "group": "navigation"
+        },
+        {
+          "command": "meteor.openJenkins",
+          "group": "navigation"
+        },
+        {
+          "command": "meteor.openGit",
+          "group": "navigation"
         }
       ]
     },
@@ -293,9 +337,17 @@
           "type": "string",
           "default": "http://jenkins.cs2025.com/"
         },
-        "meteor.jenkinsToken": {
+        "meteor.jenkinsUserName": {
           "type": "string",
-          "default": "zlst8888"
+          "default": "admin"
+        },
+        "meteor.jenkinsPassword": {
+          "type": "string",
+          "default": "admin"
+        },
+        "meteor.jenkinsHubBaseUrl": {
+          "type": "string",
+          "default": "hubs.uimpcloud.com/dev/"
         },
         "meteor.jenkinsConfig": {
           "type": "object",
@@ -320,6 +372,10 @@
         "meteor.cloudConfigUrl": {
           "type": "string",
           "default": "config"
+        },
+        "meteor.gitUrl": {
+          "type": "string",
+          "default": "http://git.cs2025.com/"
         }
       }
     }
@@ -359,6 +415,7 @@
   },
   "dependencies": {
     "@types/babel-core": "^6.25.6",
+    "@types/qs": "^6.9.7",
     "axios": "^0.21.1",
     "camelcase": "^6.2.0",
     "execa": "^5.0.0",
@@ -368,6 +425,8 @@
     "param-case": "^3.0.4",
     "prettier": "^2.2.1",
     "pretty": "^2.0.0",
+    "puppeteer": "^10.4.0",
+    "qs": "^6.10.1",
     "superagent": "^6.1.0"
   }
 }

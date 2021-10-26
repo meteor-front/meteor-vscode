@@ -1,28 +1,145 @@
-import { window, QuickInputButton, Uri, QuickPickItem, ProgressLocation, env } from 'vscode'
+import { window, QuickInputButton, Uri, ProgressLocation, env } from 'vscode'
 import Meteor from '../meteor'
-import { getWorkspaceRoot, open } from '../utils/util'
+import { getWorkspaceRoot, open, url } from '../utils/util'
 import JenkinsPanel from './jenkinsConfig'
 const execa = require('execa');
 const axios = require('axios');
 import * as fs from 'fs'
 import * as path from 'path'
+const puppeteer = require('puppeteer')
 
 export default class Jenkins {
   private meteor: Meteor
-  // 默认环境选项
-  private defaultItems: QuickPickItem[] = [{
-    label: 'develop'
-  }, {
-    label: 'master'
-  }]
   private projectName: string = ''
   private url: string = ''
   private token: string = ''
   private job: string = ''
+  private cookie: string = ''
   private workspacePath = ''
+  private browser: any = null
+  private page: any = null
+  private username = '' 
+  private password = ''
+  private hubBaseUrl = ''
 
   constructor(meteor: Meteor) {
     this.meteor = meteor
+  }
+
+  buildJenkinsJob() {
+    let retResolve: any = null
+      window.withProgress({
+        location: ProgressLocation.Notification,
+        title: 'Meteor',
+        cancellable: true
+      }, (progress, _token) => {
+        progress.report({
+          message: 'Jenkins构建...'
+        })
+        try {
+          (async ()=> {
+            try {
+              // 登录
+              this.browser = await puppeteer.launch();
+              const page = await this.browser.newPage();
+              this.page = page
+              await page.goto(`${this.url}`);
+              await page.type('#j_username', this.username)
+              await page.type('[name="j_password"]', this.password)
+              const submitBtn = await page.$('[name="Submit"]')
+              await submitBtn.click()
+              await this.page.waitFor(1000)
+
+              let url = `${this.url}job/${this.job}/build?delay=0sec`
+              const branchCmd = await execa('git', ['rev-parse', '--abbrev-ref', 'HEAD'], {
+                cwd: this.workspacePath
+              })
+              await this.page.goto(url)
+              await this.page.waitFor('[name="parameter"]');//等待下拉框出现
+              const options = await this.page.$$eval('[name="parameter"] option', (options: any) => {
+                const ret: string[] = []
+                options.forEach((option: any) => {
+                  ret.push(option.value)
+                });
+                return ret
+              })
+              if (options.includes(branchCmd.stdout)) {
+                // 选择分支
+                await this.page.select('[name="value"]', branchCmd.stdout)
+                const genBtn = await this.page.$('#yui-gen1-button')
+                if (genBtn) {
+                  await genBtn.click()
+                  await this.page.waitFor(500)
+                  const text = await this.page.$eval('.build-link', (node: any) => {
+                    // 编译版本号
+                    return node.text.replace(/#/gi, '')
+                  })
+                  if (text) {
+                    let hub = this.hubBaseUrl + this.job + ':' + text
+                    env.clipboard.writeText(hub)
+                    window.showInformationMessage(`镜像地址[已复制到剪切板]：${hub}`)
+                  } else {
+                    window.showInformationMessage('获取版本号失败！')
+                  }
+                }
+              } else {
+                window.showInformationMessage(`[前往设置分支](${this.url}/job/${this.job}/configure)`)
+              }
+              retResolve('')
+              this.browser.close()
+            } catch (error) {
+              console.log(error)
+              this.browser.close()
+              retResolve('')
+            }
+          })()
+        } catch (error) {
+          this.browser.close()
+          retResolve('')
+        }
+        _token.onCancellationRequested(() => {
+        });
+        const p = new Promise((resolve, reject) => {
+          retResolve = resolve
+        })
+        return p
+      })
+  }
+
+  async jenkinsLogin() {
+    try {
+      this.browser = await puppeteer.launch();
+      const page = await this.browser.newPage();
+      this.page = page
+      await page.goto(`${this.url}`);
+      await page.type('#j_username', this.username)
+      await page.type('[name="j_password"]', this.password)
+      const submitBtn = await page.$('[name="Submit"]')
+      await submitBtn.click()
+      await this.page.waitFor(1000)
+      this.buildJenkinsJob()
+    } catch (error) {
+      this.browser.close()
+    }
+  }
+
+  jenkinsBuild() {
+    // 获取配置信息
+    this.workspacePath = getWorkspaceRoot('')
+    this.projectName = this.workspacePath.replace(/.*[\/\\](.*)$/gi, '$1')
+    this.job = this.projectName
+    let config = this.meteor.config.get('jenkinsConfig')
+    this.url = this.meteor.config.get('jenkinsUrl')
+    this.username = this.meteor.config.get('jenkinsUserName')
+    this.password = this.meteor.config.get('jenkinsPassword')
+    this.hubBaseUrl = this.meteor.config.get('jenkinsHubBaseUrl')
+
+    config = config[this.projectName]
+    if (config) {
+      config = JSON.parse(config)
+      this.job = config.job
+    }
+    this.buildDist()
   }
 
   async init() {
@@ -32,28 +149,16 @@ export default class Jenkins {
     // 获取配置信息
     let config = this.meteor.config.get('jenkinsConfig')
     this.url = this.meteor.config.get('jenkinsUrl')
-    this.token = this.meteor.config.get('jenkinsToken')
-    let items: any[] = []
+    this.username = this.meteor.config.get('jenkinsUserName')
+    this.password = this.meteor.config.get('jenkinsPassword')
+    this.hubBaseUrl = this.meteor.config.get('jenkinsHubBaseUrl')
+
     config = config[this.projectName]
     if (config) {
       config = JSON.parse(config)
       this.job = config.job
-      const branches = config.branches
-      branches.forEach((branch: any) => {
-        items.push({
-          label: branch.name
-        })
-      });
     } else {
-      items = this.defaultItems
       config = {}
-      config.branches = [{
-        id: '1',
-        name: 'develop'
-      }, {
-        id: '2',
-        name: 'master'
-      }]
     }
 
     const quickPick = window.createQuickPick()
@@ -69,29 +174,31 @@ export default class Jenkins {
     }, 'jenkins地址'), new Button({
       light: Uri.file(this.meteor.context.asAbsolutePath('asset/light/publish.svg')),
       dark: Uri.file(this.meteor.context.asAbsolutePath('asset/dark/publish.svg')),
-    }, '获取当前版本'), new Button({
-      light: Uri.file(this.meteor.context.asAbsolutePath('asset/light/document.svg')),
-      dark: Uri.file(this.meteor.context.asAbsolutePath('asset/dark/document.svg'))
     }, '使用说明'), new Button({
       light: Uri.file(this.meteor.context.asAbsolutePath('asset/light/setting.svg')),
       dark: Uri.file(this.meteor.context.asAbsolutePath('asset/dark/setting.svg')),
     }, '设置')]
-    quickPick.items = items
+    quickPick.items = [{
+      label: '打包'
+    }]
     // 选中选项
     quickPick.onDidChangeSelection((selection) => {
       if (selection[0] && selection[0].label) {
-        this.buildDist(selection[0].label)
+        this.jenkinsBuild()
       }
       quickPick.hide()
     })
+    // git http://git.cs2025.com/
+    // jenkins http://jenkins.cs2025.com/
+    // cloud http://cloud.cs2025.com/
     // 触发按钮
     quickPick.onDidTriggerButton((item) => {
       switch (item.tooltip) {
         case '使用说明':
-          open('http://www.80fight.cn/mixin/jenkins.html')
+          open(`${url}/mixin/jenkins.html`)
           break;
         case 'jenkins地址':
-          open(this.url)
+          open(`${this.url}/job/${this.job}`)
           break;
         case '设置':
           JenkinsPanel.createOrShow(this.meteor.context.extensionPath, {
@@ -100,20 +207,6 @@ export default class Jenkins {
             token: config.token || this.token,
             job: config.job || this.projectName,
             branches: config.branches
-          })
-          break;
-        case '获取当前版本':
-          axios.get(`${this.url}/job/${this.job}/lastSuccessfulBuild/buildNumber`).then((res: any) => {
-            const version = res.data
-            if (version) {
-              axios.get(`${this.url}/job/${this.job}/${version}/console`).then((res: any) => {
-                const reg = new RegExp(`\\s[\\w.\\/]*\\/${this.job}:${version}\\s`, 'gi')
-                let ret: any = res.data.match(reg)
-                if (ret) {
-                  window.showInformationMessage(`当前镜像版本：${ret[0]}`)
-                }
-              })
-            }
           })
           break;
       
@@ -127,57 +220,8 @@ export default class Jenkins {
     quickPick.show()
   }
 
-  // jenkins job编译
-  public async buildJob(branch: string) {
-    try {
-      const versionUrl = `${this.url}/job/${this.job}/lastSuccessfulBuild/buildNumber`
-      let res = await axios.get(versionUrl)
-      let oldVersion = res.data
-      await axios.get(`${this.url}/job/${this.job}/buildWithParameters?token=${this.token}&BRANCH_NAME=${branch}`)
-
-      let retResolve: any = null
-      window.withProgress({
-        location: ProgressLocation.Notification,
-        title: 'Meteor',
-        cancellable: true
-      }, (progress, _token) => {
-        progress.report({
-          message: '正在打包中...'
-        })
-        let version = oldVersion
-        const s = setInterval(() => {
-          axios.get(versionUrl).then((res: any) => {
-            version = res.data
-            if (version > oldVersion) {
-              clearInterval(s)
-              retResolve('')
-              // 通过日志获取hub地址
-              axios.get(`${this.url}/job/${this.job}/${version}/console`).then((res: any) => {
-                const reg = new RegExp(`\\s[\\w.\\/]*\\/${this.job}:${version}\\s`, 'gi')
-                let ret: any = res.data.match(reg)
-                if (ret) {
-                  window.showInformationMessage(`镜像地址[已复制到剪切板]：${ret[0]}`)
-                  env.clipboard.writeText(ret[0])
-                }
-              })
-            }
-          })
-        }, 3000);
-        _token.onCancellationRequested(() => {
-          clearInterval(s)
-        });
-        const p = new Promise((resolve, reject) => {
-          retResolve = resolve
-        })
-        return p
-      })
-    } catch (error) {
-      window.showInformationMessage('检查Job名称、分支是否正确？`')
-      console.error(error)
-    }
-  }
   // 编译dist
-  public async buildDist(branch: string) {
+  public async buildDist() {
     // dist目录自动打包
     let buildResolve: any = null
     let buildReject: any = null
@@ -188,7 +232,7 @@ export default class Jenkins {
       cancellable: true
     }, async (progress, _token) => {
       progress.report({
-        message: '自动编译中，请稍后...'
+        message: '打包dist...'
       })
       new Promise(async (resolve, reject) => {
         try {
@@ -205,12 +249,10 @@ export default class Jenkins {
           await execa('git', ['push'], {
             cwd: workspacePath
           })
+          this.buildJenkinsJob()
           buildResolve('')
-          this.buildJob(branch)
-        } catch (error) {
-          setTimeout(() => {
-            this.buildJob(branch)
-          }, 1000);
+        } catch (error: any) {
+          window.showErrorMessage(error.message)
           buildResolve('')
         }
       })
