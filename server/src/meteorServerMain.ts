@@ -87,7 +87,7 @@ connection.onInitialized(() => {
     result.then((res) => {
       // 获取初始配置
       meteorConfig = res
-      // meteorServer.completion.updateConfig(meteorConfig)
+			meteorServer.completion.updateConfig(meteorConfig)
       // meteorServer.completion.getSwagger(false)
     })
 	}
@@ -100,6 +100,7 @@ connection.onInitialized(() => {
 
 // 监听配置改变
 connection.onDidChangeConfiguration(change => {
+  // connection.console.log("onDidChangeConfiguration")
   let result = connection.workspace.getConfiguration({
     scopeUri: '',
     section: 'meteor'
@@ -107,7 +108,8 @@ connection.onDidChangeConfiguration(change => {
   result.then((res) => {
     // 获取初始配置
     meteorConfig = res
-    // meteorServer.completion.updateConfig(meteorConfig)
+    // connection.console.log(JSON.stringify(meteorConfig))
+    meteorServer.completion.updateConfig(meteorConfig)
     // meteorServer.completion.getSwagger(true)
   })
 });
@@ -118,9 +120,10 @@ documents.onDidClose(e => {
 
 // 监听文件内容改变
 documents.onDidChangeContent(change => {
-  connection.console.log('change content')
+  // connection.console.log('change content')
   if (!workspaceRoot) {
     workspaceRoot = Utils.getWorkspaceRoot(workspaceFolders, change.document.uri)
+    meteorServer.jenkins.setWorkspacePath(workspaceRoot)
     // meteorServer.completion.updateConfig(meteorConfig)
     // meteorServer.completion.updateRoot(workspaceRoot)
     // meteorServer.completion.getSwagger(false)
@@ -130,7 +133,7 @@ documents.onDidChangeContent(change => {
 // 监听文件改变
 connection.onDidChangeWatchedFiles(_change => {
 	// Monitored files have change in VSCode
-	connection.console.log('We received an file change event');
+	// connection.console.log('We received an file change event');
 });
 
 // 提供初始完成项
@@ -145,16 +148,21 @@ connection.onCompletion(
     // return meteorServer.completion.provider()
     return []
 	}
-);
+)
 
 // 完成项进一步说明解析内容
 connection.onCompletionResolve(
 	(item: CompletionItem): CompletionItem => {
-    connection.console.log('item')
-    connection.console.log(item.label)
+    // connection.console.log('item')
+    // connection.console.log(item.label)
 		return item;
 	}
 );
+
+connection.onRequest('jenkinsBuild', async (params: string) => {
+  const ret = await meteorServer.jenkins.buildJob(meteorConfig, connection)
+  return ret
+})
 
 // 监听文件打开、改变、关闭事件
 documents.listen(connection);

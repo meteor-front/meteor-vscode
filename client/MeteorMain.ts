@@ -12,6 +12,7 @@ import NewProjectPanel from './meteor/functions/newProject'
 import { MeteorDefinitionProvider } from './meteor/definitionProvider';
 import DocumentHoverProvider from './meteor/DocumentHoverProvider';
 import { JsCompletionItemProvider } from './meteor/jsComplete';
+import * as ClientCommands from './clientCommands'
 
 const os = require("os");
 
@@ -89,9 +90,11 @@ export function activate(context: vscode.ExtensionContext) {
 	});
   // jenkins生成镜像
   const statusJenkinsCommandId = 'meteor.jenkins'
-  vscode.commands.registerCommand(statusJenkinsCommandId, async () => {
-    meteor.jenkins.jenkinsBuild()
-  })
+  // vscode.commands.registerCommand(statusJenkinsCommandId, async () => {
+  //   console.log('update')
+  //   new Config().update('doJenkins', new Date().getTime())
+  //   // meteor.jenkins.jenkinsBuild()
+  // })
   // jenkins配置
   vscode.commands.registerCommand('meteor.jenkinsConfig', async () => {
     meteor.jenkins.init()
@@ -206,10 +209,27 @@ export function activate(context: vscode.ExtensionContext) {
 	// 创建语言客户端并开启
 	client = new LanguageClient(
 		'meteorServer',
-		'meteorServerExample',
+		'meteorServerLanguage',
 		serverOptions,
 		clientOptions
 	);
+
+  function registerCommands(this: any, client: LanguageClient, context: vscode.ExtensionContext) {
+    context.subscriptions.push(
+      vscode.commands.registerCommand('meteor.jenkins', ClientCommands.jenkinsBuild.bind(this, context, client, meteor)),
+    );
+  }
+  
+  // function registerNotifications(client: LanguageClient) {
+  //   client.onNotification("openUrl", url => {
+
+  //   });
+  // }
+
+  client.onReady().then(() => {
+    registerCommands(client, context);
+    // registerNotifications(client);
+  });
 
 	// 开启客户端，并会启动服务端
 	client.start();

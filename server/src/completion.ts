@@ -21,6 +21,9 @@ export default class Completion {
   updateConfig(meteorConfig: any) {
     this.meteorConfig = meteorConfig
   }
+  getConfig() {
+    return this.meteorConfig
+  }
   updateRoot(root: string) {
     this.root = root
   }
