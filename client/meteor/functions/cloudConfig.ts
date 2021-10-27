@@ -1,7 +1,5 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
-const execa = require('execa');
-const fs = require('fs');
 import { getHtmlForWebview } from '../utils/util';
 
 /**

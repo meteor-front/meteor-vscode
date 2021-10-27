@@ -1,4 +1,4 @@
-import { window, QuickInputButton, Uri, QuickPickItem, ProgressLocation } from 'vscode'
+import { window, QuickInputButton, Uri } from 'vscode'
 import Meteor from '../meteor'
 import { getWorkspaceRoot, open } from '../utils/util'
 import CloudPanel from './cloudConfig'

@@ -1,6 +1,5 @@
 import * as fs from 'fs'
 import * as path from 'path'
-import { WorkspaceConfiguration } from 'vscode'
 import Config from '../config'
 
 export default class Traverse {

@@ -5,13 +5,10 @@
 import {
 	createConnection,
 	TextDocuments,
-	Diagnostic,
-	DiagnosticSeverity,
 	ProposedFeatures,
 	InitializeParams,
 	DidChangeConfigurationNotification,
 	CompletionItem,
-	CompletionItemKind,
 	TextDocumentPositionParams,
 	TextDocumentSyncKind,
 	InitializeResult,
@@ -23,7 +20,6 @@ import {
 	TextDocument
 } from 'vscode-languageserver-textdocument';
 import Utils from './utils'
-import Completion from './completion'
 import MeteorServer from './meteorServer'
 
 // 创建服务器连接，通信：Node's IPC

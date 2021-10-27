@@ -10,7 +10,6 @@ import { setTabSpace, getWorkspaceRoot, getRelativePath } from '../meteor/utils/
 import Traverse from './utils/traverse';
 import Meteor from './meteor'
 import Config from './config'
-const camelCase = require('camelcase');
 
 export interface TagObject {
   text: string,

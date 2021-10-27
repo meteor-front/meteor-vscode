@@ -1,5 +1,6 @@
-const puppeteer = require("puppeteer")
+const puppeteer = require("puppeteer-core")
 const execa = require('execa');
+const findChrome = require('carlo/lib/find_chrome')
 import { _Connection } from 'vscode-languageserver/node';
 
 export default class Jenkins {
@@ -35,7 +36,20 @@ export default class Jenkins {
 
     try {
       // 登录
-      this.browser = await puppeteer.launch();
+      let findChromePath = await findChrome({})
+      let executablePath = findChromePath.executablePath
+      if (!executablePath) {
+        connection.window.showInformationMessage(`未找到Chrome浏览器`)
+        return ''
+      }
+      this.browser = await puppeteer.launch({
+        executablePath,
+        headless: false,
+        defaultViewport: {
+          width: 1366,
+          height: 768
+        }
+      });
       const page = await this.browser.newPage();
       this.page = page
       await page.goto(`${this.url}`);
@@ -52,10 +66,13 @@ export default class Jenkins {
       await this.page.goto(url)
       await this.page.waitFor(500);//等待下拉框出现
       // 判断页面是否能够正常访问
-      const h2Text = await this.page.$eval('body > h2', (node: any) => node.innerText)
-      if (h2Text === 'HTTP ERROR 404 Not Found') {
-        connection.window.showInformationMessage(`Jenkins中没有${this.job}任务，[前往设置](${this.url})`)
-        return ''
+      try {
+        const h2Text = await this.page.$eval('body > h2', (node: any) => node.innerText)
+        if (h2Text === 'HTTP ERROR 404 Not Found') {
+          connection.window.showInformationMessage(`Jenkins中没有${this.job}任务，[前往设置](${this.url})`)
+          return ''
+        }        
+      } catch (error) {
       }
       const options = await this.page.$$eval('[name="parameter"] option', (options: any) => {
         const ret: string[] = []

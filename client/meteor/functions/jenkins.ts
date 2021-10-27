@@ -1,4 +1,4 @@
-import { window, QuickInputButton, Uri, ProgressLocation, commands } from 'vscode'
+import { window, QuickInputButton, Uri, commands } from 'vscode'
 import Meteor from '../meteor'
 import { getWorkspaceRoot, open, url } from '../utils/util'
 import JenkinsPanel from './jenkinsConfig'

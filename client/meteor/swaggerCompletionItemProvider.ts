@@ -4,7 +4,6 @@ import Meteor from './meteor'
 import { setTabSpace, getWorkspaceRoot, getRelativePath } from '../meteor/utils/util';
 import * as path from 'path';
 import * as fs from 'fs'
-const camelCase = require('camelcase');
 
 export default class SwaggerCompletionItemProvider implements CompletionItemProvider {
   private meteor: Meteor

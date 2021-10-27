@@ -4,15 +4,9 @@ import Meteor from './meteor/meteor';
 import * as path from 'path';
 import * as fs from 'fs';
 import { getWorkspaceRoot } from './meteor/utils/util'
-const execa = require('execa')
+import execa from 'execa'
 
-let projectName: string = ''
-let url: string = ''
-let job: string = ''
 let workspacePath = ''
-let username = '' 
-let password = ''
-let hubBaseUrl = ''
 
 function buildJenkinsJob(client: BaseLanguageClient) {
   let retResolve: any = null
@@ -94,19 +88,7 @@ function buildDist(client: BaseLanguageClient) {
 export function jenkinsBuild(context: ExtensionContext, client: BaseLanguageClient, meteor: Meteor) {
   // 获取配置信息
   workspacePath = getWorkspaceRoot('')
-  projectName = workspacePath.replace(/.*[\/\\](.*)$/gi, '$1')
-  job = projectName
-  let config = meteor.config.get('jenkinsConfig')
-  url = meteor.config.get('jenkinsUrl')
-  username = meteor.config.get('jenkinsUserName')
-  password = meteor.config.get('jenkinsPassword')
-  hubBaseUrl = meteor.config.get('jenkinsHubBaseUrl')
-
-  config = config[projectName]
-  if (config) {
-    config = JSON.parse(config)
-    job = config.job
-  }
 
   buildDist(client)
+  // buildJenkinsJob(client)
 }
