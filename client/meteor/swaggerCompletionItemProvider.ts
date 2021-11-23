@@ -54,7 +54,36 @@ export default class SwaggerCompletionItemProvider implements CompletionItemProv
               } else {
                 insertText = `const res = await this.${apiName}({\n`
               }
-              insertText += this.tabSpace + '${1}\n'
+              // 参数自动生成
+              let autoLen = this.meteor.config.get('swaggerAutoParametersLength')
+              if (postBody.parameters && postBody.parameters.length > 0 && postBody.parameters.length < autoLen) {
+                let bodyData = ''
+                let params = ''
+                postBody.parameters.forEach((param: any) => {
+                  if ((param.in === 'path' || param.in === 'query') && param.type === 'string') {
+                    if (!params) {
+                      params += `${this.tabSpace}params: {\n`
+                    }
+                    params += `${this.tabSpace}${this.tabSpace}${param.name}: ,\n`
+                  } else if (param.in === 'body' && param.type && param.type !== 'array') {
+                    if (!bodyData) {
+                      bodyData += `${this.tabSpace}data: {\n`
+                    }
+                    bodyData += `${this.tabSpace}${this.tabSpace}${param.name}: ,\n`
+                  }
+                });
+                let len = `,\n`.length
+                if (params) {
+                  params = params.substr(0, params.length - len)
+                  params += `\n${this.tabSpace}}\n`
+                  insertText += params
+                }
+                if (bodyData) {
+                  bodyData = bodyData.substr(0, bodyData.length - len)
+                  bodyData += `\n${this.tabSpace}}\n`
+                  insertText += bodyData
+                }
+              }
               insertText += '})'
               completions.push({
                 label: apiName,

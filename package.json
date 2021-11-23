@@ -4,7 +4,7 @@
   "description": "every thing for speed",
   "author": "shenjiaolong",
   "icon": "asset/logo.png",
-  "version": "4.3.3",
+  "version": "4.3.4",
   "publisher": "shenjiaolong",
   "scripts": {
     "postinstall": "run-s install:*",
@@ -328,6 +328,11 @@
           "type": "object",
           "description": "swagger url",
           "default": {}
+        },
+        "meteor.swaggerAutoParametersLength": {
+          "type": "integer",
+          "description": "auto generate api request paramters, when length > 0",
+          "default": 6
         },
         "meteor.user": {
           "type": "string",

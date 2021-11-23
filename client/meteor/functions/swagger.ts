@@ -309,7 +309,7 @@ let func = `export function ${apiName}(config) {
           if (this.docs[postBody.tags[0]]) {
             if (all || (!all && singleApi === `[${postWay}] ${apiUrl}`)) {
               let apiText = fs.readFileSync(this.docs[postBody.tags[0]].url, 'utf-8')
-              if (!all && new RegExp(`export\\s*function\\s*${apiName}`).test(apiText)) {
+              if (!all && new RegExp(`export\\s*function\\s*${apiName}\\(`).test(apiText)) {
                 // 接口已存在
                 return
               }
@@ -358,7 +358,7 @@ let func = `export function ${apiName}(config) {
             }
           }
         } catch (error) {
-          
+          console.log('error', error)
         }
       }
     }
