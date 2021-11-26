@@ -25,7 +25,6 @@ export default class SwaggerCompletionItemProvider implements CompletionItemProv
       this.workspaceRoot = getWorkspaceRoot(document.uri.path)
       this.tabSpace = setTabSpace()
       this.meteor.swagger.generate(true, false, false)
-      let url = this.meteor.swagger.generate(true, false, false)
       if (true) {
         let res: any = this.meteor.swagger.swaggerData
         if (res && res.data) {
@@ -56,7 +55,7 @@ export default class SwaggerCompletionItemProvider implements CompletionItemProv
               }
               // 参数自动生成
               let autoLen = this.meteor.config.get('swaggerAutoParametersLength')
-              if (postBody.parameters && postBody.parameters.length > 0 && postBody.parameters.length < autoLen) {
+              if (postBody.parameters && postBody.parameters.length > 0 && postBody.parameters.length <= autoLen) {
                 let bodyData = ''
                 let params = ''
                 postBody.parameters.forEach((param: any) => {
@@ -70,6 +69,21 @@ export default class SwaggerCompletionItemProvider implements CompletionItemProv
                       bodyData += `${this.tabSpace}data: {\n`
                     }
                     bodyData += `${this.tabSpace}${this.tabSpace}${param.name}: ,\n`
+                  } else if (param.in === 'body' && param.schema && param.schema.originalRef) {
+                    // schema对象自动生成
+                    if (res.data.definitions && res.data.definitions[param.schema.originalRef]) {
+                      let definitions = res.data.definitions[param.schema.originalRef]
+                      if (definitions.type === 'object' && Object.keys(definitions.properties).length <= autoLen) {
+                        for (const key in definitions.properties) {
+                          if (Object.prototype.hasOwnProperty.call(definitions.properties, key)) {
+                            if (!bodyData) {
+                              bodyData += `${this.tabSpace}data: {\n`
+                            }
+                            bodyData += `${this.tabSpace}${this.tabSpace}${key}: ,\n`
+                          }
+                        }
+                      }
+                    }
                   }
                 });
                 let len = `,\n`.length

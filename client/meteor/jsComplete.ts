@@ -68,6 +68,10 @@ export class JsCompletionItemProvider implements CompletionItemProvider {
         }
         if (propText.length > 0) {
           propText.forEach((propItem, propIndex) => {
+            let propItemArr = propItem.split('\n')
+            if (propItemArr.length > 0) {
+              propItem = propItemArr[propItemArr.length - 1]
+            }
             let protName = propItem.replace(/\s*(async\s*)?(\w*)\s*(:|\().*/gi, '$2');
             protName = protName.replace(/,/gi, '');
             props.push({
